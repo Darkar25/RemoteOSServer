@@ -43,7 +43,10 @@ namespace RemoteOS.OpenComputers
                     ComponentRemoved?.Invoke(comp);
                 }
             });
-            addresses = Parent.Execute($"component.list()").Result[0].Linq.ToDictionary(x => Guid.Parse(x.Key), x => x.Value.Value);
+        }
+        internal async Task LoadAsync()
+        {
+            addresses = (await Parent.Execute($"component.list()"))[0].Linq.ToDictionary(x => Guid.Parse(x.Key), x => x.Value.Value);
             Components = addresses.Where(x => types.ContainsKey(x.Value)).Select(x => Activator.CreateInstance(types[x.Value], Parent, x.Key) as Component);
         }
         public IEnumerator<Component> GetEnumerator() => List().GetEnumerator();

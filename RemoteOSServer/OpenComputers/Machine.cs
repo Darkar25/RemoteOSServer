@@ -13,6 +13,7 @@ namespace RemoteOS.OpenComputers
         protected new RemoteOSServer Server { get; set; }
         protected ConcurrentDictionary<string, TaskCompletionSource<string[]>> executequeue = new();
         Dictionary<string, Action<JSONArray>> SignalEvnets = new();
+        ComponentList? _components;
         public Machine(RemoteOSServer server) : base(server)
         {
             Server = server;
@@ -71,9 +72,14 @@ namespace RemoteOS.OpenComputers
         {
             Console.WriteLine($"RemoteOS session caught an error with code {error}");
         }
-
-        ComponentList? _components;
-        public ComponentList Components => _components ??= new(this);
+        public async Task<ComponentList> GetComponents() { 
+            if(_components == null)
+            {
+                _components = new(this);
+                await _components.LoadAsync();
+            }
+            return _components;
+        }
         public Computer Computer { get; }
 
         public async Task<string> RawExecute(string command)
@@ -90,5 +96,9 @@ namespace RemoteOS.OpenComputers
         }
 
         public async Task<JSONNode> Execute(string command) => JSON.Parse(await RawExecute($"return json.encode({{{command}}})"));
+
+#if ROS_PROPERTIES
+        public ComponentList Components => GetComponents().Result;
+#endif
     }
 }

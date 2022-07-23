@@ -1,4 +1,5 @@
-﻿#define Component
+﻿#define ComponentList
+#define Component
 #define InventoryController
 #define Drone
 
@@ -16,9 +17,14 @@ namespace RemoteOS.OpenComputers
 {
     public static class RemoteOS
     {
+        #region ComponentList
+#if ComponentList
+        public static bool TryGet<T>(this ComponentList components, out T component) where T : Component => (component = components.GetPrimary<T>()) != null;
+#endif
+        #endregion
         #region Component
 #if Component
-        public static bool TryGet<T>(this ComponentList components, out T component) where T : Component => (component = components.GetPrimary<T>()) != null;
+        public static async Task<bool> IsExternal(this Component component) => await component.GetSlot() == -1;
 #endif
         #endregion
         #region InventoryController
@@ -26,14 +32,14 @@ namespace RemoteOS.OpenComputers
         public static async Task<IEnumerable<ItemStackInfo>> GetInventory(this InventoryContollerComponent inv)
         {
             var invsize = inv.Parent.Components.TryGet<Agent>(out var r) ? await r.GetInventorySize() : 0;
-            var res = JSON.Parse(await inv.Parent.RawExecute($"j = {{}} for i = 1, {invsize} do j[i] = {inv.Handle}.getStackInInternalSlot(i) end return json.encode(j)"));
+            var res = JSON.Parse(await inv.Parent.RawExecute($"j = {{}} for i = 1, {invsize} do j[i] = {await inv.GetHandle()}.getStackInInternalSlot(i) end return json.encode(j)"));
             return res.Linq.Select(x => new ItemStackInfo(x));
         }
 
         public static async Task<IEnumerable<ItemStackInfo>> GetInventory(this InventoryContollerComponent inv, Sides side)
         {
             var invsize = await inv.GetInventorySize(side);
-            var res = JSON.Parse(await inv.Parent.RawExecute($"j = {{}} for i = 1, {invsize} do j[i] = {inv.Handle}.getStackInSlot({side.Luaify()}, i) end return json.encode(j)"));
+            var res = JSON.Parse(await inv.Parent.RawExecute($"j = {{}} for i = 1, {invsize} do j[i] = {await inv.GetHandle()}.getStackInSlot({side.Luaify()}, i) end return json.encode(j)"));
             return res.Linq.Select(x => new ItemStackInfo(x));
         }
 #endif
@@ -43,7 +49,7 @@ namespace RemoteOS.OpenComputers
 
         public static async Task MoveSync(this DroneComponent comp, double dx, double dy, double dz)
         {
-            await comp.Parent.RawExecute($"{comp.Handle}.move({dx.Luaify()},{dy.Luaify()},{dz.Luaify()}) while({comp.Handle}.getVelocity() > .01) do end");
+            await comp.Parent.RawExecute($"{await comp.GetHandle()}.move({dx.Luaify()},{dy.Luaify()},{dz.Luaify()}) while({await comp.GetHandle()}.getVelocity() > .01) do end");
         }
 
 #endif
