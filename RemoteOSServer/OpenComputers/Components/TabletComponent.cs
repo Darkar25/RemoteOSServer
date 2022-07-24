@@ -6,6 +6,12 @@ namespace RemoteOS.OpenComputers.Components
     [Component("tablet")]
     public class TabletComponent : Component
     {
+        /// <summary>
+        /// This event is sent when player uses tablet to analyze a block
+        /// <para>Parameters:
+        /// <br>GeolyzerResult - the result of analyze</br>
+        /// </para>
+        /// </summary>
         public event Action<GeolyzerResult>? TabletUse;
         public TabletComponent(Machine parent, Guid address) : base(parent, address)
         {
@@ -21,7 +27,9 @@ namespace RemoteOS.OpenComputers.Components
             });
         }
 
+        /// <returns>The pitch of the player holding the tablet.</returns>
         public async Task<float> GetPitch() => (await Invoke("getPitch"))[0];
+        /// <returns>The yaw of the player holding the tablet.</returns>
         public async Task<float> GetYaw() => (await Invoke("getYaw"))[0];
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED

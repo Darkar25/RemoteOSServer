@@ -12,6 +12,11 @@ namespace RemoteOS.OpenComputers.Components
 
         int? _range;
 
+        /// <summary>
+        /// Find waypoints in the specified range.
+        /// </summary>
+        /// <param name="range">Range for searching waypoints</param>
+        /// <returns>A list of found waypoints</returns>
         public async Task<IEnumerable<WaypointInfo>> GetWaypoints(int range)
         {
             var res = await Invoke("findWaypoints", range);
@@ -25,7 +30,7 @@ namespace RemoteOS.OpenComputers.Components
                 });
             return ret;
         }
-
+        /// <returns>The current relative position of the robot.</returns>
         public async Task<(bool Success, string Reason, Vector3 Position)> GetPosition()
         {
             var res = await Invoke("getPosition");
@@ -34,9 +39,9 @@ namespace RemoteOS.OpenComputers.Components
             else
                 return (true, "", new(res[0], res[1], res[2]));
         }
-
+        /// <returns>The current orientation of the robot.</returns>
         public async Task<Sides> GetFacing() => (Sides)(await Invoke("getFacing"))[0].AsInt;
-
+        /// <returns>The operational range of the navigation upgrade.</returns>
         public async Task<int> GetRange() => _range ??= (await Invoke("getRange"))[0];
 
 #if ROS_PROPERTIES

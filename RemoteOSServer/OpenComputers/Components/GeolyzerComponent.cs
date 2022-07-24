@@ -13,13 +13,25 @@ namespace RemoteOS.OpenComputers.Components
         {
         }
 
-        public async Task<double[,,]> Scan(int x, int z, bool ignoreReplacable = false) => await Scan(x, z, -32, 1, 1, 64, ignoreReplacable);
-
-        public async Task<double[,,]> Scan(int x, int z, int y, int width, int depth, int height, bool ignoreReplacable = false)
+        /// <summary>
+        /// Analyzes the density of the column at the specified relative coordinates.
+        /// </summary>
+        /// <param name="x">X column coordinate</param>
+        /// <param name="z">Z column coordinate</param>
+        /// <param name="ignoreReplaceable">Should ignore replaceable blocks</param>
+        /// <returns>Scanned blocks hardness matrix</returns>
+        public async Task<double[,,]> Scan(int x, int z, bool ignoreReplaceable = false) => await Scan(x, z, -32, 1, 1, 64, ignoreReplaceable);
+        /// <inheritdoc cref="Scan(int, int, bool)"/>
+        /// <param name="y">Y coordinate</param>
+        /// <param name="width">Width(X size) of the scan</param>
+        /// <param name="depth">Depth(Z size) of the scan</param>
+        /// <param name="height">Height(Y size) of the scan</param>
+        /// <exception cref="GeolyzerException">The scan boundarias are invalid</exception>
+        public async Task<double[,,]> Scan(int x, int z, int y, int width, int depth, int height, bool ignoreReplaceable = false)
         {
             if (width < 0 || depth < 0 || height < 0) throw new GeolyzerException("Invalid dimensions (Size cannot be negative)");
             if (width * depth * height > 64) throw new GeolyzerException("Volume too large (Maximum is 64)");
-            var res = await Parent.Execute($@"table.unpack({Handle}.scan({x},{z},{y},{width},{depth},{height},{ignoreReplacable}))");
+            var res = await Parent.Execute($@"table.unpack({await GetHandle()}.scan({x},{z},{y},{width},{depth},{height},{ignoreReplaceable}))");
             var raw = res.Linq.Select(x => x.Value.AsDouble).ToArray();
             var ret = new double[width,height,depth];
             for (int i = 0; i < width; i++)
@@ -28,7 +40,11 @@ namespace RemoteOS.OpenComputers.Components
                         ret[i, j, depth - k - 1] = raw[k + (i * width) + (j * depth * width)];
             return ret;
         }
-
+        /// <summary>
+        /// Get some information on a directly adjacent block.
+        /// </summary>
+        /// <param name="side">Which side to analyze</param>
+        /// <returns>Block information</returns>
         public async Task<GeolyzerResult> Analyze(Sides side)
         {
             var res = (await Invoke("analyze", side))[0];
@@ -43,20 +59,32 @@ namespace RemoteOS.OpenComputers.Components
                 Properties = new(res["properties"].Linq.ToDictionary(x => x.Key, x => x.Value))
             };
         }
-
+        /// <summary>
+        /// Store an item stack representation of the block on the specified side in a database component.
+        /// </summary>
+        /// <param name="side">Which side to analyze</param>
+        /// <param name="database">Destination database</param>
+        /// <param name="dbSlot">Database slot</param>
+        /// <returns>true if block was stored successfully</returns>
         public async Task<bool> Store(Sides side, DatabaseComponent database, int dbSlot) => (await Invoke("store", side, database.Address, dbSlot))[0];
-
+        /// <summary>
+        /// Checks the contents of the block on the specified sides and returns the findings.
+        /// </summary>
+        /// <param name="side">Which side to analyze</param>
+        /// <returns>Whether the block is passable and its description</returns>
         public async Task<(bool Passable, string Description)> Detect(Sides side)
         {
             var res = await Invoke("detect", side);
             return (res[0], res[1]);
         }
+        /// <returns>Whether there is a clear line of sight to the sky directly above.</returns>
         public async Task<bool> CanSeeSky() => (await Invoke("canSeeSky"))[0];
-        public async Task<bool> IssSunVisible() => (await Invoke("isSunVisible"))[0];
+        /// <returns>Whether the sun is currently visible directly above.</returns>
+        public async Task<bool> IsSunVisible() => (await Invoke("isSunVisible"))[0];
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public bool SkyVisible => CanSeeSky().Result;
-        public bool SunVisible => IssSunVisible().Result;
+        public bool SunVisible => IsSunVisible().Result;
 #endif
     }
 }

@@ -12,28 +12,56 @@
         public EEPROMComponent(Machine parent, Guid address) : base(parent, address)
         {
         }
-        public async Task<bool> MakeReadonly(string checksum) => (await Invoke("makeReadonly", checksum))[0];
 
+        /// <summary>
+        /// Make this EEPROM readonly if it isn't already. This process cannot be reversed!
+        /// </summary>
+        /// <param name="checksum"></param>
+        /// <returns></returns>
+        public async Task<bool> MakeReadonly(string checksum) => (await Invoke("makeReadonly", checksum))[0];
+        /// <returns>The currently stored byte array.</returns>
         public async Task<string> Get() => _bytes ??= (await Invoke("get"))[0];
+        /// <summary>
+        /// Overwrite the currently stored byte array.
+        /// </summary>
+        /// <param name="bytes">New data byte array</param>
+        /// <exception cref="IOException">The EEPROM cannot contain that much data</exception>
         public async Task Set(string bytes)
         {
-            _bytes = bytes;
-            await Invoke("set", $@"""{bytes}""");
+            if (bytes.Length > await GetSize()) throw new IOException("Not enough disk space");
+            if((await Invoke("set", $@"""{bytes}"""))[1].IsNull)
+                _bytes = bytes;
         }
+        /// <returns>The label of the EEPROM.</returns>
         public async Task<string> GetLabel() => _label ??= (await Invoke("getLabel"))[0];
+        /// <summary>
+        /// Set the label of the EEPROM.
+        /// </summary>
+        /// <param name="label">The new label</param>
         public async Task SetLabel(string label)
         {
-            _label = label;
-            await Invoke("setLabel", $@"""{label}""");
+            var res = await Invoke("setLabel", $@"""{label}""");
+            if (res[1].IsNull)
+                _label = res[0];
         }
+        /// <returns>The storage capacity of this EEPROM.</returns>
         public async Task<int> GetSize() => _size ??= (await Invoke("getSize"))[0];
+        /// <returns>The storage capacity of this EEPROM.</returns>
         public async Task<int> GetDataSize() => _dataSize ??= (await Invoke("getDataSize"))[0];
+        /// <returns>The currently stored byte array.</returns>
         public async Task<string> GetData() => _data ??= (await Invoke("getData"))[0];
+        /// <summary>
+        /// Overwrite the currently stored byte array.
+        /// </summary>
+        /// <param name="data">New data byte array</param>
+        /// <exception cref="IOException">The EEPROM cannot contain that much data</exception>
         public async Task SetData(string data)
         {
-            _data = data;
-            await Invoke("setData", $@"""{data}""");
+            if(data.Length > await GetDataSize()) throw new IOException("Not enough disk space");
+            if ((await Invoke("setData", $@"""{data}"""))[1].IsNull)
+                _data = data;
         }
+        /// <returns>The checksum of the data on this EEPROM.</returns>
         public async Task<string> GetChecksum() => (await Invoke("getChecksum"))[0];
 
 #if ROS_PROPERTIES

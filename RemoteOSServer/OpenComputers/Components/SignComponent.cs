@@ -7,7 +7,12 @@
         {
         }
 
+        /// <returns>The text on the sign in front of the host.</returns>
         public async Task<string> GetValue() => (await Invoke("getValue"))[0];
+        /// <summary>
+        /// Set the text on the sign in front of the host.
+        /// </summary>
+        /// <param name="value">New value</param>
         public async Task SetValue(string value) => await Invoke("setValue", $@"""{value}""");
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED

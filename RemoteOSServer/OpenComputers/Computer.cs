@@ -39,12 +39,17 @@ namespace RemoteOS.OpenComputers
             var res = await Parent.Execute($@"computer.pullSignal({timeout})");
             return (res[0], res.Linq.Skip(1).Select(x => x.Value));
         }
-        public async Task Beep(string frequency, int duration = 0)
+        public async Task Beep(string pattern)
         {
-            if (!Regex.IsMatch(frequency, @"^[\.\-]+$")) throw new ArgumentException("Frequency string must contain only dots '.' and dashes '-'");
-            await Parent.Execute($@"computer.beep(""{frequency}"",{duration}");
+            if (!Regex.IsMatch(pattern, @"^[\.\-]+$")) throw new ArgumentException("Pattern string must contain only dots '.' and dashes '-'");
+            await Parent.Execute($@"computer.beep(""{pattern}"")");
         }
-        public async Task Beep(int frequency, int duration = 0) => await Parent.Execute($@"computer.beep({frequency},{duration}");
+        public async Task Beep(int frequency, int duration = 0)
+        {
+            if (frequency < 20 || frequency > 2000) throw new ArgumentOutOfRangeException(nameof(frequency), "Invalid frequency, must be in [20, 2000]");
+            await Parent.Execute($@"computer.beep({frequency},{duration})");
+        }
+
         public Machine Parent { get; private set; }
         public async Task<Guid> GetAddress() => _address ??= Guid.Parse((await Parent.Execute("computer.address()"))[0]);
         public async Task<Guid> GetTemporaryAddress() => _tmpAddress ??= Guid.Parse((await Parent.Execute("computer.tmpAddress()"))[0]);

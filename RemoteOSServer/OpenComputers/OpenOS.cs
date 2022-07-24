@@ -37,12 +37,12 @@ namespace RemoteOS.OpenComputers
         public static async Task<bool> CompareFluid(this Agent robot) => await robot.CompareFluid(Sides.Front);
         public static async Task<bool> CompareFluidUp(this Agent robot) => await robot.CompareFluid(Sides.Top);
         public static async Task<bool> CompareFluidDown(this Agent robot) => await robot.CompareFluid(Sides.Bottom);
-        public static async Task<bool> Drain(this Agent robot, int amount = 1000) => await robot.Drain(Sides.Front, amount);
-        public static async Task<bool> DrainUp(this Agent robot, int amount = 1000) => await robot.Drain(Sides.Top, amount);
-        public static async Task<bool> DrainDown(this Agent robot, int amount = 1000) => await robot.Drain(Sides.Bottom, amount);
-        public static async Task<bool> Fill(this Agent robot, int amount = 1000) => await robot.Fill(Sides.Front, amount);
-        public static async Task<bool> FillUp(this Agent robot, int amount = 1000) => await robot.Fill(Sides.Top, amount);
-        public static async Task<bool> FillDown(this Agent robot, int amount = 1000) => await robot.Fill(Sides.Bottom, amount);
+        public static async Task<(bool Success, int Amount)> Drain(this Agent robot, int amount = 1000) => await robot.Drain(Sides.Front, amount);
+        public static async Task<(bool Success, int Amount)> DrainUp(this Agent robot, int amount = 1000) => await robot.Drain(Sides.Top, amount);
+        public static async Task<(bool Success, int Amount)> DrainDown(this Agent robot, int amount = 1000) => await robot.Drain(Sides.Bottom, amount);
+        public static async Task<(bool Success, int Amount)> Fill(this Agent robot, int amount = 1000) => await robot.Fill(Sides.Front, amount);
+        public static async Task<(bool Success, int Amount)> FillUp(this Agent robot, int amount = 1000) => await robot.Fill(Sides.Top, amount);
+        public static async Task<(bool Success, int Amount)> FillDown(this Agent robot, int amount = 1000) => await robot.Fill(Sides.Bottom, amount);
 #endif
         #endregion
         #region Robot
