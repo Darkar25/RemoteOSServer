@@ -39,26 +39,6 @@ namespace RemoteOS.OpenComputers.Components
         }
         /// <returns>Whether the computer is running.</returns>
         public async Task<bool> IsRunning() => (await Invoke("isRunning"))[0];
-        /// <summary>
-        /// Collect information on all connected devices.
-        /// </summary>
-        /// <returns>Device info dictionary</returns>
-        public async Task<ReadOnlyDictionary<Guid, DeviceInfo>> GetDeviceInfo()
-        {
-            return new((await Invoke("getDeviceInfo"))[0].Linq.ToDictionary(x => Guid.Parse(x.Key), x => new DeviceInfo()
-            {
-                Class = Enum.Parse<DeviceClass>(x.Value["class"], true),
-                Description = x.Value["description"],
-                Vendor = x.Value["vendor"],
-                Product = x.Value["product"],
-                Version = x.Value["version"],
-                Serial = x.Value["serial"],
-                Capacity = x.Value["capacity"],
-                Size = x.Value["size"],
-                Clock = x.Value["clock"].Value.Split("/").Select(x => int.Parse(x)),
-                Width = x.Value["width"]
-            }));
-        }
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public bool Running => IsRunning().Result;
 #endif

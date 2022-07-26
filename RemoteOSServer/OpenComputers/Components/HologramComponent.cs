@@ -1,4 +1,5 @@
 ﻿using RemoteOS.OpenComputers.Exceptions;
+using RemoteOS.OpenComputers.Data;
 using System.Drawing;
 using System.Numerics;
 
@@ -21,7 +22,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="PaletteException">This palette index is invalid</exception>
         public async Task<Color> GetPaletteColor(int index)
         {
-            if (index <= 0 || (await GetMaxDepth() == 1 ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
+            if (index <= 0 || (await this.GetTier() < Tier.Two ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
             return Color.FromArgb((await Invoke("getPaletteColor", index))[0]);
         }
         /// <summary>
@@ -33,7 +34,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="PaletteException">This palette index is invalid</exception>
         public async Task<Color> SetPaletteColor(int index, Color color)
         {
-            if (index <= 0 || (await GetMaxDepth() == 1 ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
+            if (index <= 0 || (await this.GetTier() < Tier.Two ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
             return Color.FromArgb((await Invoke("setPaletteColor", index, color.ToArgb()))[0]);
         }
         public async Task<int> GetMaxDepth() => _maxDepth ??= (await Invoke("maxDepth"))[0];
@@ -168,7 +169,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="NotSupportedException">This holographic projector does not support rotation</exception>
         public async Task<bool> SetRotation(float angle, float x, float y, float z)
         {
-            if (await GetMaxDepth() < 2) throw new NotSupportedException("Rotation is not supported on this tier of holographic projector");
+            if (await this.GetTier() < Tier.Two) throw new NotSupportedException("Rotation is not supported on this tier of holographic projector");
             return (await Invoke("setRotation", angle, x, y, z))[0];
         }
         /// <inheritdoc cref="SetRotation(float, float, float, float)"/>
@@ -186,7 +187,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="ArgumentOutOfRangeException">Rotation is too fast</exception>
         public async Task<bool> SetRotationSpeed(float speed, float x, float y, float z)
         {
-            if (await GetMaxDepth() < 2) throw new NotSupportedException("Rotation is not supported on this tier of holographic projector");
+            if (await this.GetTier() < Tier.Two) throw new NotSupportedException("Rotation is not supported on this tier of holographic projector");
             if (speed < -340 * 4 || speed > 340 * 4) throw new ArgumentOutOfRangeException(nameof(speed), "Rotation cannot be that fast");
             return (await Invoke("setRotationSpeed", speed, x, y, z))[0];
         }

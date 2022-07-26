@@ -1,4 +1,6 @@
-﻿namespace RemoteOS.OpenComputers.Components
+﻿using RemoteOS.OpenComputers;
+
+namespace RemoteOS.OpenComputers.Components
 {
     [Obsolete("Store all data on the server, not on the remote machine.")]
     [Component("eeprom")]
@@ -45,9 +47,17 @@
                 _label = res[0];
         }
         /// <returns>The storage capacity of this EEPROM.</returns>
-        public async Task<int> GetSize() => _size ??= (await Invoke("getSize"))[0];
+        public async Task<int> GetSize() => _size ??=
+#if ROS_GLOBAL_CACHING
+            GlobalCache.eepromSize ??=
+#endif
+            (await Invoke("getSize"))[0];
         /// <returns>The storage capacity of this EEPROM.</returns>
-        public async Task<int> GetDataSize() => _dataSize ??= (await Invoke("getDataSize"))[0];
+        public async Task<int> GetDataSize() => _dataSize ??=
+#if ROS_GLOBAL_CACHING
+            GlobalCache.eepromDataSize ??=
+#endif
+            (await Invoke("getDataSize"))[0];
         /// <returns>The currently stored byte array.</returns>
         public async Task<string> GetData() => _data ??= (await Invoke("getData"))[0];
         /// <summary>

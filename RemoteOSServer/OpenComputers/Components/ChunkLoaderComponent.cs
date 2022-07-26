@@ -15,6 +15,7 @@
         /// </summary>
         /// <param name="state">New chunkloader state</param>
         public async Task SetActive(bool state) => _active = (await Invoke("setActive", state))[0];
+
 #if ROS_PROPERTIES
         public bool Active
         {

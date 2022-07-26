@@ -1,4 +1,5 @@
 ﻿using EasyJSON;
+using RemoteOS.OpenComputers;
 
 namespace RemoteOS.OpenComputers.Components
 {
@@ -41,7 +42,11 @@ namespace RemoteOS.OpenComputers.Components
             await Invoke("setWakeMessage", $@"""{_wakeMessage}""", _wakeFuzzy);
         }
         /// <returns>The maximum packet size (config setting).</returns>
-        public async Task<int> GetMaxPacketSize() => _maxPacketSize ??= (await Invoke("maxPacketSize"))[0];
+        public async Task<int> GetMaxPacketSize() => _maxPacketSize ??=
+#if ROS_GLOBAL_CACHING
+            GlobalCache.maxNetworkPacketSize ??= 
+#endif
+            (await Invoke("maxPacketSize"))[0];
         /// <returns>This link card's shared channel address</returns>
         public async Task<string> GetChannel() => _channel ??= (await Invoke("getChannel"))[0];
 

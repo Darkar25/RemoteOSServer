@@ -3,13 +3,17 @@
     [Obsolete("Store all data on the server, not on the remote machine.")]
     [Component("drive")]
     public class DriveComponent : Component {
-        int? _sectorSize;
         int? _capacity;
         int? _platterCount;
         string? _label;
         public DriveComponent(Machine parent, Guid address) : base(parent, address)
         {
         }
+
+        /// <summary>
+        /// The size of a single sector on the drive, in bytes.
+        /// </summary>
+        public int SectorSize => 512; //This is hardcoded in OC code
 
         /// <summary>
         /// Read a single byte at the specified offset.
@@ -39,8 +43,6 @@
         public async Task<int> GetPlatterCount() => _platterCount ??= (await Invoke("getPlatterCount"))[0];
         /// <returns>The total capacity of the drive, in bytes.</returns>
         public async Task<int> GetCapacity() => _capacity ??= (await Invoke("getCapacity"))[0];
-        /// <returns>The size of a single sector on the drive, in bytes.</returns>
-        public async Task<int> GetSectorSize() => _sectorSize ??= (await Invoke("getSectorSize"))[0];
         /// <returns>The current label of the drive.</returns>
         public async Task<string> GetLabel() => _label ??= (await Invoke("getLabel"))[0];
         /// <summary>
@@ -52,7 +54,6 @@
 #if ROS_PROPERTIES
         public int PlatterCount => GetPlatterCount().Result;
         public int Capacity => GetCapacity().Result;
-        public int SectorSize => GetSectorSize().Result;
         public string Label
         {
             get => GetLabel().Result;

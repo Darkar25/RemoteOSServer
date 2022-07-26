@@ -1,4 +1,5 @@
 ﻿using EasyJSON;
+using RemoteOS.OpenComputers;
 
 namespace RemoteOS.OpenComputers.Components
 {
@@ -12,7 +13,11 @@ namespace RemoteOS.OpenComputers.Components
         }
 
         /// <returns>The maximum size of data that can be passed to other functions of the card.</returns>
-        public async Task<int> GetLimit() => _limit ??= (await Invoke("getLinit"))[0];
+        public async Task<int> GetLimit() => _limit ??= 
+        #if ROS_GLOBAL_CACHING
+            GlobalCache.dataCardHardLimit ??=
+        #endif 
+            (await Invoke("getLimit"))[0];
 
 #if ROS_PROPERTIES
         public int Limit => GetLimit().Result;

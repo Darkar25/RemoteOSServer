@@ -57,9 +57,9 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="side">The side to analyze</param>
         /// <param name="slot">The slot to analyze</param>
         /// <returns>A description of the fluid in the the tank on the specified side.</returns>
-        public async Task<FluidInfo> GetFluidInTank(Sides side, int tank)
+        public async Task<FluidInfo> GetFluidInTank(Sides side, int slot)
         {
-            var res = await Invoke("getFluidInTank", side);
+            var res = await Invoke("getFluidInTank", side, slot);
             return new()
             {
                 Amount = res["amount"],

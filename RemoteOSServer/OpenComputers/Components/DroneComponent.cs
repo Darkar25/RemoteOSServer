@@ -21,8 +21,12 @@
         }
 
         string? _statusText;
-        double? _maxVel;
         double? _acceleration;
+
+        /// <summary>
+        /// The maximum velocity, in m/s.
+        /// </summary>
+        public double MaxVelocity => 8; //This is hardcoded in OC code
 
         /// <summary>
         /// Change the target position by the specified offset.
@@ -43,8 +47,6 @@
         public async Task<double> GetOffset() => (await Invoke("getOffset"))[0];
         /// <returns>The current velocity in m/s.</returns>
         public async Task<double> GetVelocity() => (await Invoke("getVelocity"))[0];
-        /// <returns>The maximum velocity, in m/s.</returns>
-        public async Task<double> GetMaxVelocity() => _maxVel ??= (await Invoke("getMaxVelocity"))[0];
         /// <returns>The currently set acceleration.</returns>
         public async Task<double> GetAcceleration() => _acceleration ??= (await Invoke("getAcceleration"))[0];
         /// <summary>
@@ -60,7 +62,6 @@
             get => GetStatusText().Result;
             set => SetStatusText(value);
         }
-        public double MaxVelocity => GetMaxVelocity().Result;
         public double Acceleration
         {
             get => GetAcceleration().Result;

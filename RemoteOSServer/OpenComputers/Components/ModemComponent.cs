@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using EasyJSON;
+using RemoteOS.OpenComputers;
 
 namespace RemoteOS.OpenComputers.Components
 {
@@ -97,7 +98,11 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Whether this card has wired networking capability.</returns>
         public async Task<bool> IsWired() => _isWired ??= (await Invoke("isWired"))[0];
         /// <returns>The maximum packet size (config setting).</returns>
-        public async Task<int> GetMaxPacketSize() => _maxPacketSize ??= (await Invoke("maxPacketSize"))[0];
+        public async Task<int> GetMaxPacketSize() => _maxPacketSize ??=
+#if ROS_GLOBAL_CACHING
+            GlobalCache.maxNetworkPacketSize ??= 
+#endif
+            (await Invoke("maxPacketSize"))[0];
         /// <returns>The signal strength (range) used when sending messages.</returns>
         public async Task<int> GetStrength() => _strength ??= (await Invoke("getStrength"))[0];
         /// <summary>

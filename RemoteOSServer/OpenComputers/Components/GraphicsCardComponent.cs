@@ -1,4 +1,6 @@
 ﻿using RemoteOS.OpenComputers.Exceptions;
+using RemoteOS.OpenComputers;
+using RemoteOS.OpenComputers.Data;
 using System.Drawing;
 
 namespace RemoteOS.OpenComputers.Components
@@ -32,7 +34,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="PaletteException">Palette is not available or the index is invalid</exception>
         public async Task<Color> GetPaletteColor(int index)
         {
-            if(await GetDepth() == 1) throw new PaletteException("Palette is not available");
+            if(await this.GetTier() < Tier.Two) throw new PaletteException("Palette is not available");
             if (index < 0 || index >= 16) throw new PaletteException("Invalid palette index");
             return _palette[index] ??= Color.FromArgb((await Invoke("getPaletteColor", index))[0]);
         }
@@ -45,7 +47,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="PaletteException">Palette is not available or the index is invalid</exception>
         public async Task<Color> SetPaletteColor(int index, Color color)
         {
-            if (await GetDepth() == 1) throw new PaletteException("Palette is not available");
+            if (await this.GetTier() < Tier.Two) throw new PaletteException("Palette is not available");
             if (index < 0 || index >= 16) throw new PaletteException("Invalid palette index");
             _palette[index] = color;
             return Color.FromArgb((await Invoke("setPaletteColor", index, color.ToArgb()))[0]);
@@ -102,7 +104,23 @@ namespace RemoteOS.OpenComputers.Components
             return (await Invoke("freeAllBuffers"))[0];
         }
         /// <returns>The total memory size of the gpu vram. This does not include the screen.</returns>
-        public async Task<int> GetTotalMemory() => _totalMemory ??= (await Invoke("totalMemory"))[0];
+        public async Task<int> GetTotalMemory()
+        {
+#if ROS_GLOBAL_CACHING
+            if(GlobalCache.vramSizes.TryGetValue(await this.GetTier(), out int vram))
+            {
+                return _totalMemory ??= vram * (await this.GetDeviceInfo()).Capacity;
+            } else
+            {
+                _totalMemory = (await Invoke("totalMemory"))[0];
+                GlobalCache.vramSizes[await this.GetTier()] = _totalMemory.Value / (await this.GetDeviceInfo()).Capacity;
+                return _totalMemory.Value;
+            }
+#else
+            return _totalMemory ??= (await Invoke("totalMemory"))[0];
+#endif
+        }
+
         /// <returns>The total free memory not allocated to buffers. This does not include the screen.</returns>
         public async Task<int> GetFreeMemory() => await GetTotalMemory() - GetBuffers().Sum(x => x.Width * x.Height);
         /// <returns>The maximum screen resolution.</returns>
@@ -214,7 +232,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="ArgumentOutOfRangeException">This depth is not supported</exception>
         public async Task<int> SetDepth(int depth)
         {
-            if (depth != 1 || depth != 4 || depth != 8 || depth > await GetMaxDepth()) throw new ArgumentOutOfRangeException("depth", "Unsupported depth");
+            if (depth != 1 || depth != 4 || depth != 8 || depth > await GetMaxDepth()) throw new ArgumentOutOfRangeException(nameof(depth), "Unsupported depth");
             _depth = depth;
             return (await Invoke("setDepth", depth))[0];
         }

@@ -1,4 +1,6 @@
-﻿namespace RemoteOS.OpenComputers.Components
+﻿using RemoteOS.OpenComputers.Data;
+
+namespace RemoteOS.OpenComputers.Components
 {
     [Component("screen")]
     public class ScreenComponent : Component
@@ -116,7 +118,12 @@
         public async Task<bool> IsPrecise() => (await Invoke("isPrecise"))[0];
         /// <param name="precise">Set whether to use high precision mode (sub-pixel mouse event positions).</param>
         /// <returns>The old value</returns>
-        public async Task<bool> SetPrecise(bool precise) => (await Invoke("setPrecise", precise))[0];
+        public async Task<bool> SetPrecise(bool precise)
+        {
+            if (await this.GetTier() < Tier.Three) throw new NotSupportedException("Precise mode is not supported on this screen");
+            return (await Invoke("setPrecise", precise))[0];
+        }
+
         /// <returns>Whether touch mode is inverted (sneak-activate opens GUI, instead of normal activate).</returns>
         public async Task<bool> IsTouchModeInverted() => (await Invoke("isTouchModeInverted"))[0];
         /// <summary>

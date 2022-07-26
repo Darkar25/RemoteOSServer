@@ -76,6 +76,10 @@ namespace RemoteOS.OpenComputers
         }
         [Obsolete("Use DateTime.Now instead")]
         public async Task<DateTime> GetRealTime() => new DateTime().AddSeconds((await Parent.Execute("computer.realTime()"))[0]);
+        /// <summary>
+        /// Collect information on all connected devices.
+        /// </summary>
+        /// <returns>Device info dictionary</returns>
         public async Task<ReadOnlyDictionary<Guid, DeviceInfo>> GetDeviceInfo()
         {
             return _devices ??= new(JSON.Parse(await Parent.RawExecute("return json.encode(computer.getDeviceInfo())")).Linq.ToDictionary(x => Guid.Parse(x.Key), x => new DeviceInfo() { 

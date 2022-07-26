@@ -20,11 +20,16 @@ server.onConnected += async (Machine machine) => {
     Console.ResetColor();
     try
     {
-        if(machine.Components.TryGet<ScreenComponent>(out var screen) && machine.Components.TryGet<GraphicsCardComponent>(out var gpu))
+        var components = await machine.GetComponents();
+        if(components.TryGet<HologramComponent>(out var holo))
+        {
+            await holo.SetRotationAngle(45, 0, 0);
+        }
+        if(components.TryGet<ScreenComponent>(out var screen) && components.TryGet<GraphicsCardComponent>(out var gpu))
         {
             if(await gpu.Bind(screen))
             {
-                await gpu.Set(1, 1, "Hello from RemoteOS!");
+                await gpu.Set(1, 1, "Hello from RemoteOS! Current GPU Tier: " + await gpu.GetTier() + ", Total VRAM: " + await gpu.GetTotalMemory());
                 await gpu.Copy(1, 1, 20, 1, 0, 1);
                 await gpu.SetForeground(Color.Red);
                 await gpu.Set(1, 3, "R");
@@ -45,7 +50,7 @@ server.onConnected += async (Machine machine) => {
                 await gpu.Set(1, 4, "This is a GPU component test...");
                 await gpu.SetForeground(Color.White);
                 await gpu.SetBackground(Color.Black);
-                if (machine.Components.TryGet<KeyboardComponent>(out var keyboard))
+                if (components.TryGet<KeyboardComponent>(out var keyboard))
                 {
                     keyboard.KeyDown += async (c, key, player) =>
                     {
@@ -54,7 +59,7 @@ server.onConnected += async (Machine machine) => {
                 }
             }
         }
-        if (machine.Components.TryGet<DroneComponent>(out var drone))
+        if (components.TryGet<DroneComponent>(out var drone))
         {
             drones.Add(drone);
         }
