@@ -45,26 +45,30 @@ namespace RemoteOS.OpenComputers
         protected override void OnReceived(byte[] buffer, long offset, long size)
         {
             string message = Encoding.UTF8.GetString(buffer, (int)offset, (int)size);
-            var a = message.Trim().Split('\0');
-            switch(a[0])
+            var b = message.Split("\r\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var msg in b)
             {
-                case "e":
-                    var e = JSONNode.Parse(a[1]).AsArray;
-                    var name = e[0];
-                    e.Remove(0);
-                    if (SignalEvnets.TryGetValue(name, out var act))
-                        act(e);
-                    break;
-                case "r":
-                    if (executequeue.TryGetValue(a[1], out var task))
-                    {
-                        task.SetResult(a.Skip(2).ToArray());
-                        executequeue.Remove(a[1], out _);
-                    }
-                    break;
-                default:
-                    Debug.WriteLine("Unknown message " + message);
-                    break;
+                var a = msg.Split('\0');
+                switch (a[0])
+                {
+                    case "e":
+                        var e = JSONNode.Parse(a[1]).AsArray;
+                        var name = e[0];
+                        e.Remove(0);
+                        if (SignalEvnets.TryGetValue(name, out var act))
+                            act(e);
+                        break;
+                    case "r":
+                        if (executequeue.TryGetValue(a[1], out var task))
+                        {
+                            task.SetResult(a[2..]);
+                            executequeue.Remove(a[1], out _);
+                        }
+                        break;
+                    default:
+                        Debug.WriteLine("Unknown message " + message);
+                        break;
+                }
             }
         }
 
@@ -89,8 +93,8 @@ namespace RemoteOS.OpenComputers
             executequeue[key] = new(TaskCreationOptions.RunContinuationsAsynchronously);
             SendAsync(key + "\0" + command + "\r\n");
             var ret = await executequeue[key].Task;
-            var res = ret[0];
-            var err = ret[1];
+            var err = ret[0];
+            var res = string.Join("\0", ret[1..]);
             if (!string.IsNullOrWhiteSpace(err)) throw new ExecuteException(err);
             return res;
         }

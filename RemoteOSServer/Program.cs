@@ -29,7 +29,7 @@ server.onConnected += async (Machine machine) => {
         {
             if(await gpu.Bind(screen))
             {
-                await gpu.Set(1, 1, "Hello from RemoteOS! Current GPU Tier: " + await gpu.GetTier() + ", Total VRAM: " + await gpu.GetTotalMemory());
+                await gpu.Set(1, 1, "Hello from RemoteOS! Current GPU Tier: " + ((int)await gpu.GetTier() + 1) + ", Total VRAM: " + await gpu.GetTotalMemory() + " Max resolution: " + await gpu.GetHardwareMaxResolution());
                 await gpu.Copy(1, 1, 20, 1, 0, 1);
                 await gpu.SetForeground(Color.Red);
                 await gpu.Set(1, 3, "R");

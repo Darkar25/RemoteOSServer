@@ -43,7 +43,6 @@ namespace RemoteOS.OpenComputers
 
         public async Task<int> GetSlot() => _slot ??= (await Invoke("slot"))[0];
 
-
 #if ROS_PROPERTIES
         public int Slot => GetSlot().Result;
 #endif

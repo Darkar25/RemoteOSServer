@@ -1,80 +1,62 @@
 local host = "localhost"
 local port = 4466
 
--- JSON encoding library, https://github.com/rxi/json.lua/blob/master/json.lua
+-- Modified JSON encoding library, https://github.com/rxi/json.lua/blob/master/json.lua
+
 json = {}
 local encode
-local escape_char_map = {
-  [ "\\" ] = "\\",
-  [ "\"" ] = "\"",
-  [ "\b" ] = "b",
-  [ "\f" ] = "f",
-  [ "\n" ] = "n",
-  [ "\r" ] = "r",
-  [ "\t" ] = "t",
-}
-local function escape_char(c)
-  return "\\" .. (escape_char_map[c] or string.format("u%04x", c:byte()))
-end
 local function encode_nil(val)
   return "null"
 end
 local function encode_table(val, stack)
-  local res = {}
-  stack = stack or {}
-  stack[val] = true
-  local array = true
-  local length = 0
+	local res = {}
+	local array = true
+	local length = 0
 	local nLen = 0
-  for k,v in pairs(val) do
+	for k,v in pairs(val) do
 		if (type(k) ~= "number" or k<=0) and not (k == "n" and type(v) == "number") then
 			array = nil
 			break
-		else
-			if k > length then 
-				length = k
-			end
-			if k == "n" and type(v) == "number" then
-				nLen = v
-			end
 		end
-  end
-  if array then
+		if k > length then 
+			length = k
+		end
+		if k == "n" and type(v) == "number" then
+			nLen = v
+		end
+	end
+	if array then
 		if nLen > length then
 			length = nLen
 		end
-    for i=1,length do
-      table.insert(res, encode(val[i], stack))
-    end
-    stack[val] = nil
-    return "[" .. table.concat(res, ",") .. "]"
-  else
+		for i=1,length do
+			table.insert(res, encode(val[i], stack))
+		end
+		return table.concat({"[", table.concat(res, ","), "]"})
+	end
     for k, v in pairs(val) do
-      table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
+		table.insert(res, table.concal({encode(k, stack), ":", encode(v, stack)}))
     end
-    stack[val] = nil
-    return "{" .. table.concat(res, ",") .. "}"
-  end
+    return table.concat({"{", table.concat(res, ","), "}"})
+end
+local function encode_number(val)
+	return (val ~= val and "NaN") or (val <= -math.huge and "-Infinity") or (val >= math.huge and "Infinity") or tostring(val)
 end
 local function encode_string(val)
-  return '"' .. val:gsub('[%z\1-\31\\"]', escape_char) .. '"'
+  return string.format("%q", val)
 end
 local type_func_map = {
   [ "nil"     ] = encode_nil,
   [ "table"   ] = encode_table,
   [ "string"  ] = encode_string,
-  [ "number"  ] = tostring,
+  [ "number"  ] = encode_number,
   [ "boolean" ] = tostring,
 }
-encode = function(val, stack)
-  local t = type(val)
-  local f = type_func_map[t]
-  if f then
-    return f(val, stack)
-  end
+encode = function(val)
+  return type_func_map[type(val)](val)
 end
 function json.encode(val)
-  return ( encode(val) )
+  return (encode(val))
 end
 
 -- RemoteOS main program
@@ -109,31 +91,30 @@ while true do
 						end
 						while true do
 							local s, _ = exec:find("\r\n", 1, true)
+							if not s then break end
+							local tmp = exec:sub(1, s - 1)
+							exec = exec:sub(s + 2)
+							s, _ = tmp:find("\0", 1, true)
 							if s then
-								local tmp = exec:sub(1, s - 1)
-								exec = exec:sub(s + 2)
-								s, _ = tmp:find("\0", 1, true)
-								if s then
-									local execid = tmp:sub(1, s - 1)
-									local command = tmp:sub(s + 1)
-									local res, err = load(command, "=stdin", nil, setmetatable({json=json, global=global, component=component, computer=computer}, {__index=_G}))
-									local result = "false"
-									local e = ""
-									if res then
-										local success, res = pcall(res)
-										if success then
-											result = res or "true"
-										else
-											e = res or e
-										end
+								local execid = tmp:sub(1, s - 1)
+								local command = tmp:sub(s + 1)
+								local res, err = load(command, "=stdin", nil, setmetatable({json=json, global=global, component=component, computer=computer}, {__index=_G}))
+								local result = "false"
+								local e = ""
+								if res then
+									local success, res = pcall(res)
+									if success then
+										result = res or "true"
 									else
-										e = err or e
+										e = res or e
 									end
-									if not sock.write("r\0"..execid.."\0"..result.."\0"..e.."\r\n") then break end
+								else
+									e = err or e
 								end
-							else break end
+								if not sock.write(table.concat({"r\0",execid,"\0",e,"\0",result,"\r\n"})) then break end
+							end
 						end
-					elseif not sock.write("e\0"..json.encode({table.unpack(event)}).."\r\n") then break end
+					elseif not sock.write(table.concat({"e\0",json.encode({table.unpack(event)}),"\r\n"})) then break end
 				end
 			end
 			sock.close()
