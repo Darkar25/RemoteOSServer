@@ -42,7 +42,7 @@
         /// </summary>
         /// <param name="text">New status text value</param>
         /// <returns>The new status text value</returns>
-        public async Task<string> SetStatusText(string text) => _statusText = (await Invoke("setStatusText", @$"""{text}"""))[0];
+        public async Task<string> SetStatusText(string text) => _statusText = (await Invoke("setStatusText", text))[0];
         /// <returns>The current distance to the target position.</returns>
         public async Task<double> GetOffset() => (await Invoke("getOffset"))[0];
         /// <returns>The current velocity in m/s.</returns>

@@ -248,7 +248,7 @@ namespace RemoteOS.OpenComputers.Components
         /// Set the color of the activity light to the specified color
         /// </summary>
         /// <param name="color">New color</param>
-        public async Task SetLightColor(Color color) => _color = Color.FromArgb((await Invoke("setLightColor", color.ToArgb()))[0]);
+        public async Task SetLightColor(Color color) => _color = Color.FromArgb((await Invoke("setLightColor", color))[0]);
         /// <returns>The size of this device's internal inventory.</returns>
         public async Task<int> GetInventorySize() => _invSize ??= (await Invoke("inventorySize"))[0];
         /// <returns>The currently selected slot</returns>

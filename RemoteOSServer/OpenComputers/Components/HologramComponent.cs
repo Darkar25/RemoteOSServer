@@ -35,7 +35,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<Color> SetPaletteColor(int index, Color color)
         {
             if (index <= 0 || (await this.GetTier() < Tier.Two ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
-            return Color.FromArgb((await Invoke("setPaletteColor", index, color.ToArgb()))[0]);
+            return Color.FromArgb((await Invoke("setPaletteColor", index, color))[0]);
         }
         public async Task<int> GetMaxDepth() => _maxDepth ??= (await Invoke("maxDepth"))[0];
         /// <summary>
@@ -106,7 +106,7 @@ namespace RemoteOS.OpenComputers.Components
         /// Set the raw buffer to the specified byte array, where each byte represents a voxel color. Nesting is x,z,y.
         /// </summary>
         /// <param name="data">The voxel data</param>
-        public async Task SetRaw(string data) => await Invoke("setRaw", @$"""{data}""");
+        public async Task SetRaw(string data) => await Invoke("setRaw", data);
         /// <summary>
         /// Copies an area of columns by the specified translation.
         /// </summary>

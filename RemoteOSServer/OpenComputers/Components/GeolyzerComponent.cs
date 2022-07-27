@@ -66,7 +66,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="database">Destination database</param>
         /// <param name="dbSlot">Database slot</param>
         /// <returns>true if block was stored successfully</returns>
-        public async Task<bool> Store(Sides side, DatabaseComponent database, int dbSlot) => (await Invoke("store", side, database.Address, dbSlot))[0];
+        public async Task<bool> Store(Sides side, DatabaseComponent database, int dbSlot) => (await Invoke("store", side, database, dbSlot))[0];
         /// <summary>
         /// Checks the contents of the block on the specified sides and returns the findings.
         /// </summary>

@@ -33,12 +33,7 @@ namespace RemoteOS.OpenComputers
 
         public async Task<JSONNode> Invoke(string methodName, params object[] args)
         {
-            List<string> parameters = new();
-            foreach (var a in args)
-            {
-                parameters.Add(a.Luaify());
-            }
-            return await Parent.Execute($"{await GetHandle()}.{methodName}({string.Join(",", parameters)})");
+            return await Parent.Execute($"{await GetHandle()}.{methodName}({string.Join(",", args.Select(x => x.Luaify()))})");
         }
 
         public async Task<int> GetSlot() => _slot ??= (await Invoke("slot"))[0];

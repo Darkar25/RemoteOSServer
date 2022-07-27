@@ -38,7 +38,7 @@
         /// </summary>
         /// <param name="sector">Which sector to write to</param>
         /// <param name="data">The data to write into sector</param>
-        public async Task WriteSector(int sector, string data) => await Invoke("readSector", sector, $@"""{data}""");
+        public async Task WriteSector(int sector, string data) => await Invoke("readSector", sector, data);
         /// <returns>The number of platters in the drive.</returns>
         public async Task<int> GetPlatterCount() => _platterCount ??= (await Invoke("getPlatterCount"))[0];
         /// <returns>The total capacity of the drive, in bytes.</returns>
@@ -50,7 +50,7 @@
         /// </summary>
         /// <param name="label">New drive label</param>
         /// <returns>The new value, which may be truncated.</returns>
-        public async Task<string> SetLabel(string label) => _label = (await Invoke("setLabel", $@"""{label}"""))[0];
+        public async Task<string> SetLabel(string label) => _label = (await Invoke("setLabel", label))[0];
 #if ROS_PROPERTIES
         public int PlatterCount => GetPlatterCount().Result;
         public int Capacity => GetCapacity().Result;

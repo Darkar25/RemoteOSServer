@@ -31,7 +31,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task Set(string bytes)
         {
             if (bytes.Length > await GetSize()) throw new IOException("Not enough disk space");
-            if((await Invoke("set", $@"""{bytes}"""))[1].IsNull)
+            if((await Invoke("set", bytes))[1].IsNull)
                 _bytes = bytes;
         }
         /// <returns>The label of the EEPROM.</returns>
@@ -42,7 +42,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="label">The new label</param>
         public async Task SetLabel(string label)
         {
-            var res = await Invoke("setLabel", $@"""{label}""");
+            var res = await Invoke("setLabel", label);
             if (res[1].IsNull)
                 _label = res[0];
         }
@@ -68,7 +68,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task SetData(string data)
         {
             if(data.Length > await GetDataSize()) throw new IOException("Not enough disk space");
-            if ((await Invoke("setData", $@"""{data}"""))[1].IsNull)
+            if ((await Invoke("setData", data))[1].IsNull)
                 _data = data;
         }
         /// <returns>The checksum of the data on this EEPROM.</returns>

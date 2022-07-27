@@ -50,7 +50,7 @@ namespace RemoteOS.OpenComputers.Components
             if (await this.GetTier() < Tier.Two) throw new PaletteException("Palette is not available");
             if (index < 0 || index >= 16) throw new PaletteException("Invalid palette index");
             _palette[index] = color;
-            return Color.FromArgb((await Invoke("setPaletteColor", index, color.ToArgb()))[0]);
+            return Color.FromArgb((await Invoke("setPaletteColor", index, color))[0]);
         }
         /// <returns>The currently selected buffer</returns>
         public GPUBuffer GetSelectedBuffer() => _selectedBuffer ??= ScreenBuffer;
@@ -142,7 +142,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>true if binding was successful</returns>
         public async Task<bool> Bind(ScreenComponent screen, bool reset = true)
         {
-            bool ret = (await Invoke("bind", $@"""{screen.Address}""", reset))[0];
+            bool ret = (await Invoke("bind", screen, reset))[0];
             if(ret) {
                 _maxWidth = null;
                 _maxHeight = null;
@@ -180,7 +180,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<(Color color, int PaletteIndex)> SetBackground(Color background)
         {
             _background = background;
-            var res = await Invoke("setBackground", background.ToArgb());
+            var res = await Invoke("setBackground", background);
             return (Color.FromArgb(res[0]), res[1].IsNull ? -1 : res[1]);
         }
         /// <inheritdoc cref="SetBackground(Color)"/>
@@ -211,7 +211,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<(Color color, int PaletteIndex)> SetForeground(Color foreground)
         {
             _foreground = foreground;
-            var res = await Invoke("setForeground", foreground.ToArgb());
+            var res = await Invoke("setForeground", foreground);
             return (Color.FromArgb(res[0]), res[1].IsNull ? -1 : res[1]);
         }
         /// <inheritdoc cref="SetForeground(Color)"/>
@@ -318,7 +318,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="value">What to print</param>
         /// <param name="vertical">Print the text vertically</param>
         /// <returns>true if something was printed</returns>
-        public async Task<bool> Set(int x, int y, string value, bool vertical = false) => (await Invoke("set", x, y, $@"""{value}""", vertical))[0];
+        public async Task<bool> Set(int x, int y, string value, bool vertical = false) => (await Invoke("set", x, y, value, vertical))[0];
         /// <summary>
         /// Copies a portion of the screen from the specified location with the specified size by the specified translation.
         /// </summary>
@@ -351,7 +351,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (width < 0) throw new ArgumentOutOfRangeException(nameof(width), "Size cannot be negative");
             if (height < 0) throw new ArgumentOutOfRangeException(nameof(height), "Size cannot be negative");
-            return (await Invoke("fill", x, y, width, height, $@"""{value}"""))[0];
+            return (await Invoke("fill", x, y, width, height, value))[0];
         }
         public GPUBuffer ScreenBuffer
         {

@@ -37,7 +37,7 @@ namespace RemoteOS.OpenComputers.Components
         /// </summary>
         /// <param name="hash">Hash of an item</param>
         /// <returns>The index of an item, a negative value if no such stack was found.</returns>
-        public async Task<int> IndexOf(string hash) => (await Invoke("indexOf", $@"""{hash}"""))[0];
+        public async Task<int> IndexOf(string hash) => (await Invoke("indexOf", hash))[0];
         /// <summary>
         /// Clears the specified slot.
         /// </summary>
@@ -72,13 +72,13 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (from <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
             if (to <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("copy", from, to, $@"""{database.Address}"""))[0];
+            return (await Invoke("copy", from, to, database))[0];
         }
         /// <summary>
         /// Copies the data stored in this database to another database.
         /// </summary>
         /// <param name="database">Destination database</param>
         /// <returns>How many entries were copied</returns>
-        public async Task<int> Clone(DatabaseComponent database) => (await Invoke("clone", $@"""{database.Address}"""))[0];
+        public async Task<int> Clone(DatabaseComponent database) => (await Invoke("clone", database))[0];
     }
 }

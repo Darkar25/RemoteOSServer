@@ -59,7 +59,7 @@ namespace RemoteOS.OpenComputers.Components
                 maxY < 0 || maxY > 15 ||
                 maxZ < 0 || maxZ > 15
             ) throw new ArgumentOutOfRangeException("Coordinates must be in range 0..15");
-            await Invoke("addShape", minX, minY, minZ, maxX, maxY, maxZ, $"{texture}", state, tint);
+            await Invoke("addShape", minX, minY, minZ, maxX, maxY, maxZ, texture, state, tint);
         }
         /// <summary>
         /// Resets the configuration of the printer and stop printing (current job will finish).
@@ -71,14 +71,14 @@ namespace RemoteOS.OpenComputers.Components
         /// Set a label for the block being printed.
         /// </summary>
         /// <param name="label">New label</param>
-        public async Task SetLabel(string label) => await Invoke("setLabel", $@"""{label}""");
+        public async Task SetLabel(string label) => await Invoke("setLabel", label);
         /// <returns>The current tooltip for the block being printed.</returns>
         public async Task<string> GetTooltip() => (await Invoke("getTooltip"))[0];
         /// <summary>
         /// Set a tooltip for the block being printed.
         /// </summary>
         /// <param name="tooltip">New tooltip</param>
-        public async Task SetTooltip(string tooltip) => await Invoke("setTooltip", $@"""{tooltip}""");
+        public async Task SetTooltip(string tooltip) => await Invoke("setTooltip", tooltip);
         /// <returns>Whether the printed block should automatically return to its off state.</returns>
         public async Task<bool> IsButtonMode() => (await Invoke("isButtonMode"))[0];
         /// <summary>

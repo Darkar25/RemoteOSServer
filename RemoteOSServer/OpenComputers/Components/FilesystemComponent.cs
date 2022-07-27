@@ -15,35 +15,35 @@
         /// </summary>
         /// <param name="path">Absolute path</param>
         /// <returns>true if the directory creation was successful</returns>
-        public async Task<bool> MakeDirectory(string path) => (await Invoke("makeDirectory", $@"""{path}"""))[0];
+        public async Task<bool> MakeDirectory(string path) => (await Invoke("makeDirectory", path))[0];
         /// <param name="path">Absolute path</param>
         /// <returns>Whether an object exists at the specified absolute path in the file system.</returns>
-        public async Task<bool> Exists(string path) => (await Invoke("exists", $@"""{path}"""))[0];
+        public async Task<bool> Exists(string path) => (await Invoke("exists", path))[0];
         /// <param name="path">Absolute path</param>
         /// <returns>whether the object at the specified absolute path in the file system is a directory.</returns>
-        public async Task<bool> IsDirectory(string path) => (await Invoke("isDirectory", $@"""{path}"""))[0];
+        public async Task<bool> IsDirectory(string path) => (await Invoke("isDirectory", path))[0];
         /// <summary>
         /// Renames/moves an object from the first specified absolute path in the file system to the second.
         /// </summary>
         /// <param name="from">Absolute path of original file</param>
         /// <param name="to">Absolute path of destination file</param>
         /// <returns>true if file was renamed successfully</returns>
-        public async Task<bool> Rename(string from, string to) => (await Invoke("rename", $@"""{from}""", $@"""{to}"""))[0];
+        public async Task<bool> Rename(string from, string to) => (await Invoke("rename", from, to))[0];
         /// <param name="path">Absolute path</param>
         /// <returns>A list of names of objects in the directory at the specified absolute path in the file system.</returns>
-        public async Task<IEnumerable<string>> List(string path) => (await Invoke("list", $@"""{path}"""))[0].Linq.Select(x => x.Value.Value);
+        public async Task<IEnumerable<string>> List(string path) => (await Invoke("list", path))[0].Linq.Select(x => x.Value.Value);
         /// <param name="path">Absolute path</param>
         /// <returns>The (real world) timestamp of when the object at the specified absolute path in the file system was modified.</returns>
-        public async Task<DateTime> LastModified(string path) => new DateTime().AddSeconds((await Invoke("lastModified", $@"""{path}"""))[0]);
+        public async Task<DateTime> LastModified(string path) => new DateTime().AddSeconds((await Invoke("lastModified", path))[0]);
         /// <summary>
         /// Removes the object at the specified absolute path in the file system.
         /// </summary>
         /// <param name="path">Absolute path</param>
         /// <returns>true if file was removed</returns>
-        public async Task<bool> Remove(string path) => (await Invoke("remove", $@"""{path}"""))[0];
+        public async Task<bool> Remove(string path) => (await Invoke("remove", path))[0];
         /// <param name="path">Absolute path</param>
         /// <returns>The size of the object at the specified absolute path in the file system.</returns>
-        public async Task<int> Size(string path) => (await Invoke("size", $@"""{path}"""))[0];
+        public async Task<int> Size(string path) => (await Invoke("size", path))[0];
         /// <summary>
         /// Opens a new file descriptor and returns its handle.
         /// </summary>
@@ -54,7 +54,7 @@
         public async Task<FilesystemStream> Open(string path, string mode = "r")
         {
             if (!new string[] { "r", "rb", "w", "wb", "a", "ab" }.Contains(mode)) throw new ArgumentException("Unsupported mode");
-            return new FilesystemStream(this, (await Invoke("open", $@"""{path}""", mode))[0]);
+            return new FilesystemStream(this, (await Invoke("open", path, mode))[0]);
         }
         /// <returns>Whether the file system is read-only.</returns>
         public async Task<bool> IsReadOny() => (await Invoke("isReadOnly"))[0];
@@ -69,7 +69,7 @@
         /// </summary>
         /// <param name="label">The new label</param>
         /// <returns>The new value, which may be truncated.</returns>
-        public async Task SetLabel(string label) => _label = (await Invoke("setLabel", $@"""{label}"""))[0];
+        public async Task SetLabel(string label) => _label = (await Invoke("setLabel", label))[0];
 
 #if ROS_PROPERTIES
 #if ROS_PROPS_UNCACHED
@@ -105,14 +105,14 @@
             /// </summary>
             /// <param name="data">Data to write</param>
             /// <returns>true if data was written successfully</returns>
-            public async Task<bool> Write(string data) => (await Parent.Invoke("write", Handle, $@"""{data}"""))[0];
+            public async Task<bool> Write(string data) => (await Parent.Invoke("write", Handle, data))[0];
             /// <summary>
             /// Seeks in an open file descriptor
             /// </summary>
             /// <param name="whence">Seek mode</param>
             /// <param name="offset">Offset</param>
             /// <returns>The new pointer position.</returns>
-            public async Task<int> Seek(string whence, int offset) => (await Parent.Invoke("seek", Handle, $@"""{whence}""", offset))[0];
+            public async Task<int> Seek(string whence, int offset) => (await Parent.Invoke("seek", Handle, whence, offset))[0];
             /// <summary>
             /// Closes an open file descriptor
             /// </summary>

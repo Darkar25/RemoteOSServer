@@ -13,7 +13,7 @@
         /// Set the text on the sign in front of the host.
         /// </summary>
         /// <param name="value">New value</param>
-        public async Task SetValue(string value) => await Invoke("setValue", $@"""{value}""");
+        public async Task SetValue(string value) => await Invoke("setValue", value);
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public string Value

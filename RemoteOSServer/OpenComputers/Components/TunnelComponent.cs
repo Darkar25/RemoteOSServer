@@ -39,7 +39,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             _wakeMessage = message;
             _wakeFuzzy = fuzzy;
-            await Invoke("setWakeMessage", $@"""{_wakeMessage}""", _wakeFuzzy);
+            await Invoke("setWakeMessage", _wakeMessage, _wakeFuzzy);
         }
         /// <returns>The maximum packet size (config setting).</returns>
         public async Task<int> GetMaxPacketSize() => _maxPacketSize ??=

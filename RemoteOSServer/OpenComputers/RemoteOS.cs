@@ -7,8 +7,10 @@
 using EasyJSON;
 using RemoteOS.OpenComputers.Components;
 using RemoteOS.OpenComputers.Data;
+using System.Drawing;
 using System.Globalization;
 using System.Numerics;
+using System.Text;
 
 namespace RemoteOS.OpenComputers
 {
@@ -142,12 +144,56 @@ namespace RemoteOS.OpenComputers
         #endregion
 
         public static string Luaify(this object data) => data switch {
-            Sides s when data is Sides => ((int)s).ToString(),
+            _ when data is null => "nil",
+            JSONObject o when data is JSONObject => o.Linq.ToDictionary(x => x.Key, x => x.Value).Luaify(),
+            JSONArray ja when data is JSONArray => ja.Linq.Select(x => x.Value).Luaify(),
+            Sides s when data is Sides => ((int)s).Luaify(),
             bool b when data is bool => b ? "true" : "false",
+            Guid g when data is Guid => "\"" + g + "\"",
             IFormattable f when data is IFormattable => f.ToString(null, CultureInfo.InvariantCulture),
             IEnumerable<object> a when data is IEnumerable<object> => "{" + string.Join(",", a.Select(x => x.Luaify())) + "}",
-            _ when data is null => "nil",
-            _ => data.ToString()
+            IDictionary<object, object> d when data is IDictionary<object, object> => "{" + string.Join(",", d.Select(x => "[" + x.Key.Luaify() + "]=" + x.Value.Luaify())) + "}",
+            string str when data is string => str.ToLiteral(),
+            Component c when data is Component => c.Address.Luaify(),
+            Color col when data is Color => col.ToArgb().Luaify(),
+            _ => throw new InvalidOperationException("This type cannot be converted into a lua type")
         };
+
+        public static string ToLiteral(this string input)
+        {
+            StringBuilder literal = new StringBuilder(input.Length + 2);
+            literal.Append('"');
+            foreach (var c in input)
+            {
+                switch (c)
+                {
+                    case '\"': literal.Append("\\\""); break;
+                    case '\\': literal.Append(@"\\"); break;
+                    case '\0': literal.Append(@"\0"); break;
+                    case '\a': literal.Append(@"\a"); break;
+                    case '\b': literal.Append(@"\b"); break;
+                    case '\f': literal.Append(@"\f"); break;
+                    case '\n': literal.Append(@"\n"); break;
+                    case '\r': literal.Append(@"\r"); break;
+                    case '\t': literal.Append(@"\t"); break;
+                    case '\v': literal.Append(@"\v"); break;
+                    default:
+                        // ASCII printable character
+                        if (c >= 0x20 && c <= 0x7e)
+                        {
+                            literal.Append(c);
+                            // As UTF16 escaped character
+                        }
+                        else
+                        {
+                            literal.Append(@"\u");
+                            literal.Append(((int)c).ToString("x4"));
+                        }
+                        break;
+                }
+            }
+            literal.Append('"');
+            return literal.ToString();
+        }
     }
 }

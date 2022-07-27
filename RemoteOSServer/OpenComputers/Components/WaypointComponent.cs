@@ -13,7 +13,7 @@
         /// Set the label for this waypoint.
         /// </summary>
         /// <param name="label">New label</param>
-        public async Task SetLabel(string label) => await Invoke("setLabel", @$"""{label}""");
+        public async Task SetLabel(string label) => await Invoke("setLabel", label);
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public string Label

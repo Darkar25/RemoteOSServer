@@ -102,7 +102,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> Store(Sides side, int slot, DatabaseComponent database, int dbSlot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("store", side, slot, database.Address, dbSlot))[0];
+            return (await Invoke("store", side, slot, database, dbSlot))[0];
         }
         /// <summary>
         /// Store an item stack description in the specified slot of the database
@@ -115,7 +115,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> StoreInternal(int slot, DatabaseComponent database, int dbSlot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("storeInternal", slot, database.Address, dbSlot))[0];
+            return (await Invoke("storeInternal", slot, database, dbSlot))[0];
         }
         /// <summary>
         /// Compare an item in the specified slot with one in the database with the specified address.
@@ -129,7 +129,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CompareToDatabase(int slot, DatabaseComponent database, int dbSlot, bool checkNBT = false)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("compareToDatabase", slot, database.Address, dbSlot, checkNBT))[0];
+            return (await Invoke("compareToDatabase", slot, database, dbSlot, checkNBT))[0];
         }
         /// <param name="side">The side that has the inventory</param>
         /// <param name="slotA">Slot of the first item</param>

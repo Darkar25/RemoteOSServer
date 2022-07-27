@@ -78,7 +78,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="port">Port of the receiver</param>
         /// <param name="args">Data to send</param>
         /// <returns>true if data was sent</returns>
-        public async Task<bool> Send(Guid reciever, int port, params JSONNode[] args) => (await Invoke("send", $@"""{reciever}""", port, args))[0];
+        public async Task<bool> Send(Guid reciever, int port, params JSONNode[] args) => (await Invoke("send", reciever, port, args))[0];
         /// <summary>
         /// Broadcasts the specified data on the specified port.
         /// </summary>
@@ -92,7 +92,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="message">Wake message</param>
         /// <param name="fuzzy">Ignore data</param>
         /// <returns>The old value</returns>
-        public async Task<string> SetWakeMessage(string message, bool fuzzy = false) => _wakeMessage = (await Invoke("setWakeMessage", $@"""{message}""", fuzzy))[0];
+        public async Task<string> SetWakeMessage(string message, bool fuzzy = false) => _wakeMessage = (await Invoke("setWakeMessage", message, fuzzy))[0];
         /// <returns>Whether this card has wireless networking capability.</returns>
         public async Task<bool> IsWireless() => _isWireless ??= (await Invoke("isWireless"))[0];
         /// <returns>Whether this card has wired networking capability.</returns>

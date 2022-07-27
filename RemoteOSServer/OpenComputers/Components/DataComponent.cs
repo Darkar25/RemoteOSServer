@@ -30,43 +30,43 @@ namespace RemoteOS.OpenComputers.Components
         /// </summary>
         /// <param name="message">Message to compute hash on</param>
         /// <returns>Hash of the specified message</returns>
-        public async Task<string> CRC32(string message) => (await Invoke("crc32", $@"""{message}"""))[0];
+        public async Task<string> CRC32(string message) => (await Invoke("crc32", message))[0];
         /// <summary>
         /// Applies base64 encoding to the data.
         /// </summary>
         /// <param name="message">Message to encode</param>
         /// <returns>Encoded message</returns>
-        public async Task<string> Encode64(string message) => (await Invoke("encode64", $@"""{message}"""))[0];
+        public async Task<string> Encode64(string message) => (await Invoke("encode64", message))[0];
         /// <summary>
         /// Applies base64 decoding to the data.
         /// </summary>
         /// <param name="message">Encoded message</param>
         /// <returns>Decoded message</returns>
-        public async Task<string> Decode64(string message) => (await Invoke("decode64", $@"""{message}"""))[0];
+        public async Task<string> Decode64(string message) => (await Invoke("decode64", message))[0];
         /// <summary>
         /// Computes MD5 hash of the data. Result is binary data.
         /// </summary>
         /// <param name="message">The message to compute hash on</param>
         /// <returns>Hash of the specified message</returns>
-        public async Task<string> MD5(string message) => (await Invoke("md5", $@"""{message}"""))[0];
+        public async Task<string> MD5(string message) => (await Invoke("md5", message))[0];
         /// <summary>
         /// Computes SHA2-256 hash of the data. Result is binary data.
         /// </summary>
         /// <param name="message">The message to compute hash on</param>
         /// <returns>Hash of the specified message</returns>
-        public async Task<string> SHA256(string message) => (await Invoke("sha256", $@"""{message}"""))[0];
+        public async Task<string> SHA256(string message) => (await Invoke("sha256", message))[0];
         /// <summary>
         /// Applies deflate compression to the data.
         /// </summary>
         /// <param name="message">Message to deflate</param>
         /// <returns>Compressed message</returns>
-        public async Task<string> Deflate(string message) => (await Invoke("deflate", $@"""{message}"""))[0];
+        public async Task<string> Deflate(string message) => (await Invoke("deflate", message))[0];
         /// <summary>
         /// Applies inflate decompression to the data.
         /// </summary>
         /// <param name="message">Deflated message</param>
         /// <returns>Decoded message</returns>
-        public async Task<string> Inflate(string message) => (await Invoke("inflate", $@"""{message}"""))[0];
+        public async Task<string> Inflate(string message) => (await Invoke("inflate", message))[0];
 
         #endregion
         #region Tier 2
@@ -78,7 +78,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="key">Key to encrypt with</param>
         /// <param name="iv">Enryption vector</param>
         /// <returns>Encrypted data</returns>
-        public async Task<string> Encrypt(string message, string key, string iv) => (await Invoke("encrypt", $@"""{message}""", $@"""{key}""", $@"""{iv}"""))[0];
+        public async Task<string> Encrypt(string message, string key, string iv) => (await Invoke("encrypt", message, key, iv))[0];
         /// <summary>
         /// Decrypt data with AES.
         /// </summary>
@@ -86,7 +86,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="key">Key that the data was encrypted with</param>
         /// <param name="iv">Encryption vector</param>
         /// <returns></returns>
-        public async Task<string> Decrypt(string message, string key, string iv) => (await Invoke("encrypt", $@"""{message}""", $@"""{key}""", $@"""{iv}"""))[0];
+        public async Task<string> Decrypt(string message, string key, string iv) => (await Invoke("encrypt", message, key, iv))[0];
         /// <summary>
         /// Generates secure random binary data.
         /// </summary>
