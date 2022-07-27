@@ -35,7 +35,7 @@ local function encode_table(val, stack)
 		return table.concat({"[", table.concat(res, ","), "]"})
 	end
     for k, v in pairs(val) do
-		table.insert(res, table.concal({encode(k, stack), ":", encode(v, stack)}))
+		table.insert(res, table.concat({encode(k, stack), ":", encode(v, stack)}))
     end
     return table.concat({"{", table.concat(res, ","), "}"})
 end
