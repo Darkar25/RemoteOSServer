@@ -13,31 +13,32 @@ namespace RemoteOS.OpenComputers.Components
         {
         }
 
+        /// <inheritdoc cref="Scan(int, int, int, int, int, int, bool)"/>
+        public async Task<double[,,]> Scan(int x, int z, bool ignoreReplaceable = false) => await Scan(x, z, -32, 1, 1, 64, ignoreReplaceable);
         /// <summary>
         /// Analyzes the density of the column at the specified relative coordinates.
         /// </summary>
         /// <param name="x">X column coordinate</param>
         /// <param name="z">Z column coordinate</param>
-        /// <param name="ignoreReplaceable">Should ignore replaceable blocks</param>
-        /// <returns>Scanned blocks hardness matrix</returns>
-        public async Task<double[,,]> Scan(int x, int z, bool ignoreReplaceable = false) => await Scan(x, z, -32, 1, 1, 64, ignoreReplaceable);
-        /// <inheritdoc cref="Scan(int, int, bool)"/>
         /// <param name="y">Y coordinate</param>
         /// <param name="width">Width(X size) of the scan</param>
         /// <param name="depth">Depth(Z size) of the scan</param>
         /// <param name="height">Height(Y size) of the scan</param>
+        /// <param name="ignoreReplaceable">Should ignore replaceable blocks</param>
         /// <exception cref="GeolyzerException">The scan boundarias are invalid</exception>
+        /// <returns>Scanned blocks hardness matrix, [x,y,z]</returns>
         public async Task<double[,,]> Scan(int x, int z, int y, int width, int depth, int height, bool ignoreReplaceable = false)
         {
             if (width < 0 || depth < 0 || height < 0) throw new GeolyzerException("Invalid dimensions (Size cannot be negative)");
             if (width * depth * height > 64) throw new GeolyzerException("Volume too large (Maximum is 64)");
-            var res = await Parent.Execute($@"table.unpack({await GetHandle()}.scan({x},{z},{y},{width},{depth},{height},{ignoreReplaceable}))");
+            var res = await Parent.Execute($@"table.unpack({await GetHandle()}.scan({x},{z},{y},{width},{depth},{height},{ignoreReplaceable.Luaify()}))");
             var raw = res.Linq.Select(x => x.Value.AsDouble).ToArray();
-            var ret = new double[width,height,depth];
-            for (int i = 0; i < width; i++)
-                for (int j = 0; j < height; j++)
-                    for (int k = 0; k < depth; k++)
-                        ret[i, j, depth - k - 1] = raw[k + (i * width) + (j * depth * width)];
+            var ret = new double[width, height, depth];
+            var i = 0;
+            for (int ry = 0; ry < height; ry++)
+                for (int rz = 0; rz < depth; rz++)
+                    for (int rx = 0; rx < width; rx++)
+                        ret[rx, ry, rz] = raw[i++];
             return ret;
         }
         /// <summary>

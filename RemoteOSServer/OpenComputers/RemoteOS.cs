@@ -3,6 +3,8 @@
 #define Drone
 #define Hologram
 #define GraphicsCard
+#define Robot
+#define Geolyzer
 
 using EasyJSON;
 using RemoteOS.OpenComputers.Components;
@@ -116,6 +118,41 @@ namespace RemoteOS.OpenComputers
 
 #endif
         #endregion
+        #region Robot
+#if Robot
+
+        /// <summary>
+        /// This method uses <see cref="GeolyzerComponent"/> to detect facing of the robot...The robot have to hold a block.
+        /// </summary>
+        /// <param name="comp">The robot</param>
+        /// <returns>Facing of the robot</returns>
+        public static async Task<Sides> NavigationlessFacing(this RobotComponent comp)
+        {
+            if ((await comp.Parent.GetComponents()).TryGet<GeolyzerComponent>(out var geo))
+            {
+                if (!(await comp.Detect(Sides.Front)).Passable) await comp.Swing(Sides.Front);
+                await comp.Turn(false);
+                if (!(await comp.Detect(Sides.Front)).Passable) await comp.Swing(Sides.Front);
+                await comp.Turn(false);
+                if (!(await comp.Detect(Sides.Front)).Passable) await comp.Swing(Sides.Front);
+                await comp.Turn(false);
+                if ((await comp.Detect(Sides.Front)).Passable) await comp.Place(Sides.Front);
+                var res = await geo.Scan(-1, -1, 0, 3, 2, 1, true);
+                return res[0, 0, 1] > 0 ? Sides.Right : res[1, 0, 0] > 0 ? Sides.Back : res[2, 0, 1] > 0 ? Sides.Left : Sides.Front;
+            }
+            throw new InvalidOperationException("Robot requires a geolyzer component to call this method");
+        }
+
+#endif
+        #endregion
+        #region Geolyzer
+#if Geolyzer
+
+        /// <inheritdoc cref="GeolyzerComponent.Scan(int, int, int, int, int, int, bool)"/>
+        public static async Task<double[,,]> ScanXYZ(this GeolyzerComponent comp, int x, int y, int z, int width, int height, int depth, bool ignoreReplaceable = false) => await comp.Scan(x, z, y, width, depth, height, ignoreReplaceable);
+
+#endif
+        #endregion
         #region ComponentTiers
 
         public static async Task<Tier> GetTier(this DataComponent data) => (Tier)(await data.Parent.Execute($"({await data.GetHandle()}.ecdh and 2) or ({await data.GetHandle()}.random and 1) or 0"))[0].AsInt;
@@ -151,13 +188,15 @@ namespace RemoteOS.OpenComputers
             bool b when data is bool => b ? "true" : "false",
             Guid g when data is Guid => "\"" + g + "\"",
             IFormattable f when data is IFormattable => f.ToString(null, CultureInfo.InvariantCulture),
-            IEnumerable<object> a when data is IEnumerable<object> => "{" + string.Join(",", a.Select(x => x.Luaify())) + "}",
             IDictionary<object, object> d when data is IDictionary<object, object> => "{" + string.Join(",", d.Select(x => "[" + x.Key.Luaify() + "]=" + x.Value.Luaify())) + "}",
+            IEnumerable<object> a when data is IEnumerable<object> => "{" + string.Join(",", a.Select(x => x.Luaify())) + "}",
             string str when data is string => str.ToLiteral(),
             Component c when data is Component => c.Address.Luaify(),
             Color col when data is Color => col.ToArgb().Luaify(),
             _ => throw new InvalidOperationException("This type cannot be converted into a lua type")
         };
+
+        public static Sides Opposite(this Sides side) => (int)side % 2 == 0 ? side + 1 : side - 1;
 
         public static string ToLiteral(this string input)
         {

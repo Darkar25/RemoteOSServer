@@ -51,11 +51,18 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="side">Side to perform the action on</param>
         /// <param name="sneaky">Perform action while sneaking (like when pressing the Shift key)</param>
         /// <returns>Whether the action was successful and if it was not, the reason why</returns>
-        public async Task<(bool Success, string Reason)> Swing(Sides side = Sides.Front, bool sneaky = false) => await Swing(side, side, sneaky);
+        public async Task<(bool Success, string Reason)> Swing(Sides side = Sides.Front, bool sneaky = false)
+        {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            var cmd = await Invoke("swing", side, sneaky);
+            return (cmd[0], cmd[1]);
+        }
         /// <inheritdoc cref="Swing(Sides, bool)"/>
         /// <param name="face">The `face' allows a more precise click calibration, and is relative to the targeted blockspace.</param>
         public async Task<(bool Success, string Reason)> Swing(Sides side, Sides face, bool sneaky = false)
         {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            if (face == side.Opposite()) throw new InvalidSideException("Face cannot be opposite to the side.");
             var cmd = await Invoke("swing", side, face, sneaky);
             return (cmd[0], cmd[1]);
         }
@@ -66,11 +73,18 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="sneaky">Perform action while sneaking (like when pressing the Shift key)</param>
         /// <param name="duration">How long the agent has to perform this action</param>
         /// <returns>Whether the action was successful and if it was not, the reason why</returns>
-        public async Task<(bool Success, string Reason)> Use(Sides side = Sides.Front, bool sneaky = false, int duration = 0) => await Use(side, side, sneaky, duration);
+        public async Task<(bool Success, string Reason)> Use(Sides side = Sides.Front, bool sneaky = false, int duration = 0)
+        {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            var cmd = await Invoke("use", side, sneaky, duration);
+            return (cmd[0], cmd[1]);
+        }
         /// <inheritdoc cref="Use(Sides, bool, int)"/>
         /// <param name="face">The `face' allows a more precise click calibration, and is relative to the targeted blockspace.</param>
         public async Task<(bool Success, string Reason)> Use(Sides side, Sides face, bool sneaky = false, int duration = 0)
         {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            if (face == side.Opposite()) throw new InvalidSideException("Face cannot be opposite to the side.");
             var cmd = await Invoke("use", side, face, sneaky, duration);
             return (cmd[0], cmd[1]);
         }
@@ -80,11 +94,18 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="side">Side to perform the action on</param>
         /// <param name="sneaky">Perform action while sneaking (like when pressing the Shift key)</param>
         /// <returns>Whether the action was successful and if it was not, the reason why</returns>
-        public async Task<(bool Success, string Reason)> Place(Sides side = Sides.Front, bool sneaky = false) => await Place(side, side, sneaky);
+        public async Task<(bool Success, string Reason)> Place(Sides side = Sides.Front, bool sneaky = false)
+        {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            var cmd = await Invoke("place", side, sneaky);
+            return (cmd[0], cmd[1]);
+        }
         /// <inheritdoc cref="Place(Sides, bool)"/>
         /// <param name="face">The `face' allows a more precise click calibration, and is relative to the targeted blockspace.</param>
         public async Task<(bool Success, string Reason)> Place(Sides side, Sides face, bool sneaky = false)
         {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            if (face == side.Opposite()) throw new InvalidSideException("Face cannot be opposite to the side.");
             var cmd = await Invoke("place", side, face, sneaky);
             return (cmd[0], cmd[1]);
         }
@@ -180,6 +201,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Whether the block is passable and its description</returns>
         public async Task<(bool Passable, string Description)> Detect(Sides side)
         {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
             var res = await Invoke("detect", side);
             return (!res[0], res[1]);
         }
@@ -188,7 +210,12 @@ namespace RemoteOS.OpenComputers.Components
         /// </summary>
         /// <param name="side">The side which has the tank</param>
         /// <returns>true is fluids are equal, otherwise false</returns>
-        public async Task<bool> CompareFluid(Sides side) => (await Invoke("compareFluid", side))[0];
+        public async Task<bool> CompareFluid(Sides side)
+        {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            return (await Invoke("compareFluid", side))[0];
+        }
+
         /// <summary>
         /// Drains the specified amount of fluid from the specified side.
         /// </summary>
@@ -197,6 +224,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Whether the drain was successful and the amount if it was</returns>
         public async Task<(bool Success, int Amount)> Drain(Sides side, int amount = 1000)
         {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
             var res = await Invoke("drain", side, amount);
             return (res[0], res[1]);
         }
@@ -208,6 +236,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Whether the fill was successful and the amount if it was</returns>
         public async Task<(bool Success, int Amount)> Fill(Sides side, int amount = 1000)
         {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
             var res = await Invoke("fill", side, amount);
             return (res[0], res[1]);
         }
@@ -220,14 +249,24 @@ namespace RemoteOS.OpenComputers.Components
         /// <remarks>Empty blocks are considered as air blocks, which cannot be compared to an empty inventory slot;
         /// For blocks that drop a different item, the <see cref="Compare(Sides, bool)"/> method won't work (eg: Diamond block dropping diamond items);
         /// for these cases, use silk-touch to obtain a block for comparison.</remarks>
-        public async Task<bool> Compare(Sides side, bool fuzzy = false) => (await Invoke("compare", side, fuzzy))[0];
+        public async Task<bool> Compare(Sides side, bool fuzzy = false)
+        {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            return (await Invoke("compare", side, fuzzy))[0];
+        }
+
         /// <summary>
         /// Drops items from the selected slot towards the specified side.
         /// </summary>
         /// <param name="side">The side to drop items from</param>
         /// <param name="amount">How much items to drop</param>
         /// <returns>true if items were dropped succesfully, otherwise false</returns>
-        public async Task<bool> Drop(Sides side, int amount = 64) => (await Invoke("drop", side, amount))[0];
+        public async Task<bool> Drop(Sides side, int amount = 64)
+        {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            return (await Invoke("drop", side, amount))[0];
+        }
+
         /// <summary>
         /// Suck up items from the specified side.
         /// </summary>
@@ -236,6 +275,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Whether the suction was successful and the amount if it was</returns>
         public async Task<(bool Success, int Amount)> Suck(Sides side, int amount = 64)
         {
+            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
             var res = await Invoke("suck", side, amount);
             var f = res[0].IsBoolean;
             return (!f, f ? 0 : res[0]);

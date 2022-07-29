@@ -5,6 +5,7 @@ using RemoteOS.OpenComputers.Components;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
