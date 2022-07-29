@@ -151,6 +151,55 @@ namespace RemoteOS.OpenComputers
         /// <inheritdoc cref="GeolyzerComponent.Scan(int, int, int, int, int, int, bool)"/>
         public static async Task<double[,,]> ScanXYZ(this GeolyzerComponent comp, int x, int y, int z, int width, int height, int depth, bool ignoreReplaceable = false) => await comp.Scan(x, z, y, width, depth, height, ignoreReplaceable);
 
+        // Credits: @eu_tomat, https://computercraft.ru/topic/3352-metodika-uskorennogo-vychisleniya-konstanty-shuma-geoskanera/
+        /// <summary>
+        /// Calculates the noise constant. There has to be a block under the Geolyzer,
+        /// </summary>
+        /// <remarks>This method is quite expensive, use this only when ROS_GLOBAL_CACHING is turned on!</remarks>
+        /// <param name="comp">The geolyzer that have to perform calculations</param>
+        /// <returns>The noise constant defined in opencomputers config</returns>
+        public static async Task<(bool Success, float Noise)> GetNoiseConstant(this GeolyzerComponent comp)
+        {
+#if ROS_GLOBAL_CACHING
+            if (GlobalCache.geolyzerNoise.HasValue) return (true, GlobalCache.geolyzerNoise.Value);
+#endif
+            // Minified version of eu_tomats's script
+            var res = JSON.Parse(await comp.Parent.RawExecute(@$"local a={{}}local b=0;local c,d,e,f;local g;for h=1,99 do c={await comp.GetHandle()}.scan(0,0,-1,1,1,1)[1]g=false;if not a[c]then for i,j in pairs(a)do d=math.abs(c-i)if not e or e>d then e=d;g=true end;if not f or f<d then f=d;g=true end end;a[c]=true;b=b+1 end;if g and f/e>128 then break end end;return json.encode(g and f/e>128 and{{true,(e*4224*1e2+0.5)//1/1e2}}or{{false,nil}})"));
+#if ROS_GLOBAL_CACHING
+            if (res[0].AsBool) GlobalCache.geolyzerNoise = res[1];
+#endif
+            return (res[0], res[1]);
+        }
+
+        // Credits: @pengoid @doob @eu_tomat, https://computercraft.ru/topic/3346-vychislenie-pogreshnosti-geoskanera/ and https://computercraft.ru/topic/3950-okkultnye-praktiki-pri-poiske-rudy/
+        /// <summary>
+        /// Clears the noise of geolyzer scan result
+        /// </summary>
+        /// <param name="comp">The geolyzer component that was user for the scan</param>
+        /// <param name="geoResult">The result of a scan</param>
+        /// <param name="offsetX">X offset that was used for scanning</param>
+        /// <param name="offsetY">Y offset that was used for scanning</param>
+        /// <param name="offsetZ">Z offset that was used for scanning</param>
+        /// <param name="targetHardness">The hardness level that needs to be filtered out of everything else</param>
+        /// <returns>Boolean matrix: true if the block with target hardness is present on such coordinates, false otherwise, [x, y, z]</returns>
+        public static async Task<bool[,,]> DenoiseFilter(this GeolyzerComponent comp, double[,,] geoResult, int offsetX, int offsetY, int offsetZ, float targetHardness)
+        {
+            bool[,,] res = new bool[geoResult.GetLength(0), geoResult.GetLength(1), geoResult.GetLength(2)];
+            float noise = 2;
+            var r = await comp.GetNoiseConstant();
+            if (r.Success) noise = r.Noise;
+            for (int x = 0; x < res.GetLength(0); x++)
+                for (int y = 0; y < res.GetLength(1); y++)
+                    for (int z = 0; z < res.GetLength(2); z++) {
+                        var ox = x + offsetX;
+                        var oy = y + offsetY;
+                        var oz = z + offsetZ;
+                        var a = 4224 * (geoResult[x, y, z] - targetHardness) / Math.Sqrt(ox * ox + oy * oy + oz * oz) / noise;
+                        res[x, y, z] = geoResult[x, y, z] != 0 && a > -128 && a < 127 && (a % 1 > 0.9998 || a % 1 < 0.0002);
+                    }
+            return res;
+        }
+
 #endif
         #endregion
         #region ComponentTiers

@@ -17,6 +17,7 @@ namespace RemoteOS.OpenComputers
         public static Dictionary<Tier, int> vramSizes { get; } = new();
         public static Dictionary<Tier, int> gpuMaxWidth { get; } = new();
         public static Dictionary<Tier, int> gpuMaxHeight { get; } = new();
+        public static float? geolyzerNoise { get; set; }
     }
 }
 #endif
