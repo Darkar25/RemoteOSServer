@@ -163,7 +163,7 @@ namespace RemoteOS.OpenComputers
 #if ROS_GLOBAL_CACHING
             if (GlobalCache.geolyzerNoise.HasValue) return (true, GlobalCache.geolyzerNoise.Value);
 #endif
-            // Minified version of eu_tomats's script
+            // Minified version of eu_tomat's script
             var res = JSON.Parse(await comp.Parent.RawExecute(@$"local a={{}}local b=0;local c,d,e,f;local g;for h=1,99 do c={await comp.GetHandle()}.scan(0,0,-1,1,1,1)[1]g=false;if not a[c]then for i,j in pairs(a)do d=math.abs(c-i)if not e or e>d then e=d;g=true end;if not f or f<d then f=d;g=true end end;a[c]=true;b=b+1 end;if g and f/e>128 then break end end;return json.encode(g and f/e>128 and{{true,(e*4224*1e2+0.5)//1/1e2}}or{{false,nil}})"));
 #if ROS_GLOBAL_CACHING
             if (res[0].AsBool) GlobalCache.geolyzerNoise = res[1];
