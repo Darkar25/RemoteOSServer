@@ -16,22 +16,39 @@ namespace RemoteOS.OpenComputers
         ReadOnlyDictionary<Guid, DeviceInfo>? _devices;
         string? _arch;
 
+        public Machine Parent { get; private set; }
+
         public Computer(Machine parent) => Parent = parent;
+
+        /// <summary>
+        /// Shutdown or reboot the computer.
+        /// </summary>
+        /// <param name="reboot">Should reboot the computer after shutting down</param>
         public async Task Shutdown(bool reboot = false) => await Parent.Execute($"computer.shutdown({reboot.Luaify()})");
+        /// <summary>
+        /// Add a player to the machine's list of users, by username. This requires for the player to be online.
+        /// </summary>
+        /// <param name="nickname">the name of the player to add as a user.</param>
+        /// <returns>Whether the player was added to the user list.</returns>
         public async Task<(bool Success, string Reason)> AddUser(string nickname)
         {
-            var res = await Parent.Execute($@"computer.addUser(""{nickname}"")");
+            var res = await Parent.Execute($@"computer.addUser({nickname.Luaify()})");
             if (res[0]) (await GetUsers()).Add(nickname);
             return (res[0], res[1]);
         }
+        /// <summary>
+        /// Removes a player as a user from this machine, by username. Unlike when adding players, the player does not have to be online to be removed from the list.
+        /// </summary>
+        /// <param name="nickname">the name of the player to remove.</param>
+        /// <returns>whether the player was removed from the user list.</returns>
         public async Task<bool> RemoveUser(string nickname)
         {
-            var ret = (await Parent.Execute($@"computer.removeUser(""{nickname}"")"))[0];
+            var ret = (await Parent.Execute($@"computer.removeUser({nickname.Luaify()})"))[0];
             if (ret) (await GetUsers()).Remove(nickname);
             return ret;
         }
         [Obsolete("Highly unrecommended, use signal events instead!")]
-        public async Task PushSugnal(string name, params JSONNode[] args) => await Parent.Execute($@"computer.pushSignal(""{name}""{(args.Length > 0 ? "," + string.Join(",", args.Select(x => x.Luaify())) : "")}");
+        public async Task PushSugnal(string name, params JSONNode[] args) => await Parent.Execute($@"computer.pushSignal({name.Luaify()}{(args.Length > 0 ? "," + string.Join(",", args.Select(x => x.Luaify())) : "")}");
 
         [Obsolete("Highly unrecommended, use signal events instead!")]
         public async Task<(string Name, IEnumerable<JSONNode> Data)> PullSugnal(int timeout)
@@ -39,39 +56,73 @@ namespace RemoteOS.OpenComputers
             var res = await Parent.Execute($@"computer.pullSignal({timeout})");
             return (res[0], res.Linq.Skip(1).Select(x => x.Value));
         }
+        /// <summary>
+        /// Utility method for playing beep codes. 
+        /// The underlying functionality is similar to that of <see cref="Beep(int, int)"/>,
+        /// except that this will play tones at a fixed frequency, and two different durations - in a pattern as defined in the passed string.
+        /// This is useful for generating beep codes, such as for boot errors.
+        /// </summary>
+        /// <param name="pattern">pattern the beep pattern to play.</param>
+        /// <exception cref="ArgumentException">String pattern is invalid</exception>
         public async Task Beep(string pattern)
         {
             if (!Regex.IsMatch(pattern, @"^[\.\-]+$")) throw new ArgumentException("Pattern string must contain only dots '.' and dashes '-'");
-            await Parent.Execute($@"computer.beep(""{pattern}"")");
+            await Parent.Execute($@"computer.beep({pattern.Luaify()})");
         }
+        /// <summary>
+        /// Play a sound using the machine's built-in speaker.
+        /// </summary>
+        /// <param name="frequency">the frequency of the tone to generate.</param>
+        /// <param name="duration">the duration of the tone to generate, in milliseconds.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Frequency is invalid</exception>
         public async Task Beep(int frequency, int duration = 0)
         {
             if (frequency < 20 || frequency > 2000) throw new ArgumentOutOfRangeException(nameof(frequency), "Invalid frequency, must be in [20, 2000]");
             await Parent.Execute($@"computer.beep({frequency},{duration})");
         }
-
-        public Machine Parent { get; private set; }
+        /// <returns>The address of this computer</returns>
         public async Task<Guid> GetAddress() => _address ??= Guid.Parse((await Parent.Execute("computer.address()"))[0]);
+        /// <returns>The temporary address</returns>
         public async Task<Guid> GetTemporaryAddress() => _tmpAddress ??= Guid.Parse((await Parent.Execute("computer.tmpAddress()"))[0]);
+        /// <returns>Remaining memory</returns>
         public async Task<int> GetFreeMemory() => (await Parent.Execute("computer.freeMemory()"))[0];
+        /// <returns>Total memory</returns>
         public async Task<int> GetTotalMemory() => (await Parent.Execute("computer.totalMemory()"))[0];
+        /// <returns>Remaining energy</returns>
         public async Task<float> GetEnergy() => (await Parent.Execute("computer.energy()"))[0];
+        /// <returns>Total energy</returns>
         public async Task<float> GetMaxEnergy() => _maxEnergy ??= (await Parent.Execute("computer.maxEnergy()"))[0];
+        /// <returns>How long the computer was running for</returns>
         public async Task<TimeSpan> GetUptime() => TimeSpan.FromSeconds((await Parent.Execute("computer.uptime()"))[0]);
+        /// <returns>The address that the computer is booting from</returns>
         public async Task<string> GetBootAddress() => _bootaddress ??= (await Parent.Execute("computer.getBootAddress()"))[0];
+        /// <summary>
+        /// Sets the boot address
+        /// </summary>
+        /// <param name="address">New boot address</param>
         public async Task SetBootAddress(string address)
         {
-            await Parent.Execute($@"computer.setBootAddress(""{address}"")");
+            await Parent.Execute($@"computer.setBootAddress({address.Luaify()})");
             _bootaddress = address;
         }
         public async Task<string> GetRunLevel() => (await Parent.Execute("computer.runLevel()"))[0];
+        /// <returns>The list of users registered on this machine.</returns>
         public async Task<List<string>> GetUsers() => _users ??= (await Parent.Execute("computer.users()"))[0].Linq.Select(x => x.Value.Value).ToList();
         public async Task<IEnumerable<string>> GetArchitectures() => _architectures ??= (await Parent.Execute("computer.getArchitectures()"))[0].Linq.Select(x => x.Value.Value);
+        /// <summary>
+        /// This is what actually evaluates code running on the machine, where the machine class itself serves as a scheduler.
+        /// </summary>
+        /// <returns>The underlying architecture of the machine.</returns>
         public async Task<string> GetArchitecture() => _arch ??= (await Parent.Execute("computer.getArchitecture()"))[0];
+        /// <summary>
+        /// Sets the architecture for this computer
+        /// </summary>
+        /// <param name="arch">New architecture</param>
+        /// <exception cref="ArgumentException">This architecture does not exist</exception>
         public async Task SetArchitecture(string arch)
         {
             if (!(await GetArchitectures()).Contains(arch)) throw new ArgumentException("Unknown architecture");
-            await Parent.Execute($@"computer.setArchitecture(""{arch}"")"); //This returns some values but it also restarts the computer so doesnt matter
+            await Parent.Execute($@"computer.setArchitecture({arch.Luaify()})"); //This returns some values but it also restarts the computer so doesnt matter
             _arch = arch;
         }
         [Obsolete("Use DateTime.Now instead")]
@@ -95,6 +146,9 @@ namespace RemoteOS.OpenComputers
                 Width = x.Value["width"]
             }));
         }
+        /// <summary>
+        /// Clears the device info cache, so the next <see cref="GetDeviceInfo"/> call with be forced to load the device info from the remote machine.
+        /// </summary>
         public void ClearDeviceInfoCache() => _devices = null;
 
 #if ROS_PROPERTIES

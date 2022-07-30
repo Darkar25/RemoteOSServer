@@ -16,8 +16,21 @@ namespace RemoteOS.OpenComputers
         }
         Dictionary<Guid, string> addresses = new();
 
+        /// <summary>
+        /// This event is sent when component is added to the machine
+        /// <para>Parameters:
+        /// <br>Component - the component that was added</br>
+        /// </para>
+        /// </summary>
         public event Action<Component>? ComponentAdded;
+        /// <summary>
+        /// This event is sent when component is romeved from the machine
+        /// <para>Parameters:
+        /// <br>Component - the component that was removed</br>
+        /// </para>
+        /// </summary>
         public event Action<Component>? ComponentRemoved;
+
         public ComponentList(Machine computer)
         {
             Parent = computer;
@@ -53,10 +66,23 @@ namespace RemoteOS.OpenComputers
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+        /// <typeparam name="T">The component to find</typeparam>
+        /// <returns>Wheter the specified component is available</returns>
         public bool IsAvailable<T>() where T : Component => List<T>().Any();
+        /// <returns>All available components</returns>
         public IEnumerable<Component> List() => Components;
+        /// <typeparam name="T">Component type</typeparam>
+        /// <returns>All available components of the specified type</returns>
         public IEnumerable<T> List<T>() where T : Component => List().OfType<T>();
+        /// <summary>
+        /// Finds components using specified filter
+        /// </summary>
+        /// <param name="filter">Filter</param>
+        /// <param name="exact">Component must match the filter exactly</param>
+        /// <returns>All found components</returns>
         public IEnumerable<Component> List(string filter, bool exact = false) => List().Where(x => exact ? x.Type == filter : x.Type.Contains(filter));
+        /// <typeparam name="T">Which component to get</typeparam>
+        /// <returns>The primary component of the specified type</returns>
         public T? GetPrimary<T>() where T : Component
         {
             if(typeof(T) == typeof(ComputerComponent))
@@ -64,9 +90,12 @@ namespace RemoteOS.OpenComputers
             else
                 return List<T>().FirstOrDefault();
         }
-
+        /// <param name="address">The address to find</param>
+        /// <returns>Component that has the specified address</returns>
         public Component? Get(Guid address) => List().FirstOrDefault(x => x.Address == address);
+        /// <param name="address">The address to find</param>
+        /// <typeparam name="T">The type of the component</typeparam>
+        /// <returns>Component that has the specified address and type</returns>
         public T? Get<T>(Guid address) where T : Component => List<T>().FirstOrDefault(x => x.Address == address);
-        public async Task<JSONNode> Invoke(Component component, string methodName, params object[] args) => await component.Invoke(methodName, args);
     }
 }

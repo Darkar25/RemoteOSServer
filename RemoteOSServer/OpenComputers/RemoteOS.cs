@@ -20,13 +20,24 @@ namespace RemoteOS.OpenComputers
     {
         #region ComponentList
 #if ComponentList
+
+        /// <summary>
+        /// Tries to get the component
+        /// </summary>
+        /// <typeparam name="T">Which component to get</typeparam>
+        /// <param name="components">The component list to get the component from</param>
+        /// <returns>true if this component available, false otherwise</returns>
         public static bool TryGet<T>(this ComponentList components, out T component) where T : Component => (component = components.GetPrimary<T>()) != null;
+
 #endif
         #endregion
         #region Component
 
+        /// <param name="component">The component</param>
+        /// <returns>Whether this component is external</returns>
         public static async Task<bool> IsExternal(this Component component) => await component.GetSlot() == -1;
-
+        /// <param name="component">The component</param>
+        /// <returns>The component`s device info</returns>
         public static async Task<DeviceInfo> GetDeviceInfo(this Component component) => (await component.Parent.Computer.GetDeviceInfo()).TryGetValue(component.Address, out var ret) ? ret : default;
 
         #endregion
@@ -50,9 +61,38 @@ namespace RemoteOS.OpenComputers
         #region Drone
 #if Drone
 
+        /// <inheritdoc cref="DroneComponent.Move(float, float, float)"/>
         public static async Task MoveSync(this DroneComponent comp, double dx, double dy, double dz)
         {
             await comp.Parent.RawExecute($"{await comp.GetHandle()}.move({dx.Luaify()},{dy.Luaify()},{dz.Luaify()}) while({await comp.GetHandle()}.getVelocity() > .01) do end");
+        }
+        /// <inheritdoc cref="DroneComponent.Move(float, float, float)"/>
+        /// <param name="side">Which side to move to</param>
+        public static async Task MoveSync(this DroneComponent comp, Sides side)
+        {
+            float dx = 0, dy = 0, dz = 0;
+            switch(side)
+            {
+                case Sides.Bottom:
+                    dy = -1;
+                    break;
+                case Sides.Top:
+                    dy = 1;
+                    break;
+                case Sides.Back:
+                    dz = -1;
+                    break;
+                case Sides.Front:
+                    dz = 1;
+                    break;
+                case Sides.Right:
+                    dx = -1;
+                    break;
+                case Sides.Left:
+                    dx = 1;
+                    break;
+            }
+            await MoveSync(comp, dx, dy, dz);
         }
 
 #endif
@@ -92,9 +132,19 @@ namespace RemoteOS.OpenComputers
         #region Hologram
 #if Hologram
 
+        /// <summary>
+        /// Set the rotation angle for the hologram
+        /// </summary>
+        /// <param name="holo">Holographic projector</param>
+        /// <param name="x">X axis rotation angle in degrees</param>
+        /// <param name="y">Y axis rotation angle in degrees</param>
+        /// <param name="z">Z axis rotation angle in degrees</param>
+        /// <returns>true if rotation was successful</returns>
         public static async Task<bool> SetRotationAngle(this HologramComponent holo, float x, float y, float z) => await holo.SetRotationAngle(Quaternion.CreateFromYawPitchRoll(x, y, z));
 
         // This rotation method is still not quite right, needs some tweaking to make it rotate the exact angles needed...
+        /// <inheritdoc cref="SetRotationAngle(HologramComponent, float, float, float)"/>
+        /// <param name="rot">Rotation quaternion</param>
         public static async Task<bool> SetRotationAngle(this HologramComponent holo, Quaternion rot)
         {
             double angle_rad = Math.Acos(rot.W) * 2d;
@@ -229,6 +279,12 @@ namespace RemoteOS.OpenComputers
 
         #endregion
 
+        /// <summary>
+        /// Prepare object for transfer to remote machine
+        /// </summary>
+        /// <param name="data">The object to transform</param>
+        /// <returns>String representation of this object that can be accepted from lua code</returns>
+        /// <exception cref="InvalidOperationException">This object cannot be transformed</exception>
         public static string Luaify(this object data) => data switch {
             _ when data is null => "nil",
             JSONObject o when data is JSONObject => o.Linq.ToDictionary(x => x.Key, x => x.Value).Luaify(),
@@ -245,6 +301,8 @@ namespace RemoteOS.OpenComputers
             _ => throw new InvalidOperationException("This type cannot be converted into a lua type")
         };
 
+        /// <param name="side">Original side</param>
+        /// <returns>The opposite side</returns>
         public static Sides Opposite(this Sides side) => (int)side % 2 == 0 ? side + 1 : side - 1;
 
         public static string ToLiteral(this string input)

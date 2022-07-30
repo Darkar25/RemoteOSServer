@@ -30,12 +30,22 @@ namespace RemoteOS.OpenComputers
             new Task(() => Server.onDisconnected?.Invoke(this), TaskCreationOptions.LongRunning).Start();
         }
 
+        /// <summary>
+        /// Listen for incoming signals of specified type
+        /// </summary>
+        /// <param name="signal">Signal type</param>
+        /// <param name="action">Handler</param>
         public void Listen(string signal, Action<JSONArray> action)
         {
             if(SignalEvnets.ContainsKey(signal)) SignalEvnets[signal] += action;
             else SignalEvnets[signal] = action;
         }
 
+        /// <summary>
+        /// Push the signal to all available listeners
+        /// </summary>
+        /// <param name="signal">Signal type</param>
+        /// <param name="parameters">Signal parameters</param>
         public void FireSignal(string signal, params JSONNode[] parameters)
         {
             if (SignalEvnets.TryGetValue(signal, out var act))
@@ -76,6 +86,8 @@ namespace RemoteOS.OpenComputers
         {
             Console.WriteLine($"RemoteOS session caught an error with code {error}");
         }
+
+        /// <returns>The component list of this machine</returns>
         public async Task<ComponentList> GetComponents() { 
             if(_components == null)
             {
@@ -84,8 +96,18 @@ namespace RemoteOS.OpenComputers
             }
             return _components;
         }
+
+        /// <summary>
+        /// The computer associated with this machine
+        /// </summary>
         public Computer Computer { get; }
 
+        /// <summary>
+        /// Executes the command
+        /// </summary>
+        /// <param name="command">The command to execute</param>
+        /// <returns>Result of the command</returns>
+        /// <exception cref="ExecuteException">Remote machine threw an error while executing the command</exception>
         public async Task<string> RawExecute(string command)
         {
             string key = Convert.ToBase64String(Guid.NewGuid().ToByteArray())[..8];
@@ -99,6 +121,11 @@ namespace RemoteOS.OpenComputers
             return res;
         }
 
+        /// <summary>
+        /// Executes the command and wraps its result in json
+        /// </summary>
+        /// <param name="command">The command to execute</param>
+        /// <returns>Result of the command in JSON format</returns>
         public async Task<JSONNode> Execute(string command) => JSON.Parse(await RawExecute($"return json.encode({{{command}}})"));
 
 #if ROS_PROPERTIES

@@ -9,7 +9,6 @@ namespace RemoteOS.OpenComputers.Components
         Color? _color;
         int? _selectedSlot;
         int? _selectedTank;
-        int? _invSize;
         int? _tnkCount;
 
         /// <summary>
@@ -215,7 +214,6 @@ namespace RemoteOS.OpenComputers.Components
             if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
             return (await Invoke("compareFluid", side))[0];
         }
-
         /// <summary>
         /// Drains the specified amount of fluid from the specified side.
         /// </summary>
@@ -254,7 +252,6 @@ namespace RemoteOS.OpenComputers.Components
             if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
             return (await Invoke("compare", side, fuzzy))[0];
         }
-
         /// <summary>
         /// Drops items from the selected slot towards the specified side.
         /// </summary>
@@ -266,7 +263,6 @@ namespace RemoteOS.OpenComputers.Components
             if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
             return (await Invoke("drop", side, amount))[0];
         }
-
         /// <summary>
         /// Suck up items from the specified side.
         /// </summary>
@@ -290,7 +286,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="color">New color</param>
         public async Task SetLightColor(Color color) => _color = Color.FromArgb((await Invoke("setLightColor", color))[0]);
         /// <returns>The size of this device's internal inventory.</returns>
-        public async Task<int> GetInventorySize() => _invSize ??= (await Invoke("inventorySize"))[0];
+        public async Task<int> GetInventorySize() => (await this.GetDeviceInfo()).Capacity;
         /// <returns>The currently selected slot</returns>
         public async Task<int> GetSelectedSlot() => _selectedSlot ??= (await Invoke("select"))[0];
         /// <summary>

@@ -12,37 +12,39 @@ namespace RemoteOS.OpenComputers.Components
         int? _maxPacketSize;
         int? _strength;
         string? _wakeMessage;
-        List<int> _openPorts = new();
+        List<ushort> _openPorts = new();
 
         /// <summary>
         /// This event is sent when modem receives a packet
         /// <para>Parameters:
         /// <br>Guid - sender address</br>
-        /// <br>int - port</br>
+        /// <br>ushort - port</br>
         /// <br>int - distance</br>
         /// <br>IEnumerable&lt;JSONNode&gt; - data</br>
         /// </para>
         /// </summary>
-        public event Action<Guid, int, int, IEnumerable<JSONNode>>? ModemMessage;
+        public event Action<Guid, ushort, int, IEnumerable<JSONNode>>? ModemMessage;
 
         public ModemComponent(Machine parent, Guid address) : base(parent, address)
         {
             parent.Listen("modem_message", (parameters) => {
                 if (parameters[0].Value == Address.ToString())
-                    ModemMessage?.Invoke(Guid.Parse(parameters[1]), parameters[2], parameters[3], parameters.Linq.Skip(4).Select(x => x.Value));
+                    ModemMessage?.Invoke(Guid.Parse(parameters[1]), (ushort)parameters[2].AsInt, parameters[3], parameters.Linq.Skip(4).Select(x => x.Value));
             });
         }
 
         /// <param name="port">Port to check</param>
         /// <returns>Whether the specified port is open.</returns>
-        public bool IsOpen(int port) => _openPorts.Contains(port);
+        public bool IsOpen(ushort port) => _openPorts.Contains(port);
         /// <summary>
         /// Opens the specified port.
         /// </summary>
         /// <param name="port">Port to open</param>
         /// <returns>true if the port was opened.</returns>
-        public async Task<bool> Open(int port)
+        public async Task<bool> Open(ushort port)
         {
+            if (_openPorts.Contains(port)) return false;
+            if (_openPorts.Count >= (await this.GetDeviceInfo()).Size) throw new IOException("Too many open ports");
             var res = await Invoke("open", port);
             if (res[0])
                 _openPorts.Add(port);
@@ -53,7 +55,7 @@ namespace RemoteOS.OpenComputers.Components
         /// </summary>
         /// <param name="port">Port to close</param>
         /// <returns>true if ports were closed.</returns>
-        public async Task<bool> Close(int port)
+        public async Task<bool> Close(ushort port)
         {
             var res = await Invoke("close", port);
             if (res[0])
@@ -78,14 +80,14 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="port">Port of the receiver</param>
         /// <param name="args">Data to send</param>
         /// <returns>true if data was sent</returns>
-        public async Task<bool> Send(Guid reciever, int port, params JSONNode[] args) => (await Invoke("send", reciever, port, args))[0];
+        public async Task<bool> Send(Guid reciever, ushort port, params JSONNode[] args) => (await Invoke("send", reciever, port, args))[0];
         /// <summary>
         /// Broadcasts the specified data on the specified port.
         /// </summary>
         /// <param name="port">Port to broadcast on</param>
         /// <param name="args">Data to send</param>
         /// <returns>true if data was sent</returns>
-        public async Task<bool> Broadcast(int port, params JSONNode[] args) => (await Invoke("broadcast", port, args))[0];
+        public async Task<bool> Broadcast(ushort port, params JSONNode[] args) => (await Invoke("broadcast", port, args))[0];
         /// <summary>
         /// Set the wake-up message and whether to ignore additional data/parameters.
         /// </summary>
@@ -113,7 +115,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>The current wake-up message.</returns>
         public async Task<string> GetWakeMessage() => _wakeMessage ??= (await Invoke("getWakeMessage"))[0];
 
-        public bool this[int port]
+        public bool this[ushort port]
         {
             get => IsOpen(port);
             set
