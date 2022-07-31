@@ -25,12 +25,17 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="depth">Depth(Z size) of the scan</param>
         /// <param name="height">Height(Y size) of the scan</param>
         /// <param name="ignoreReplaceable">Should ignore replaceable blocks</param>
-        /// <exception cref="GeolyzerException">The scan boundarias are invalid</exception>
+        /// <exception cref="GeolyzerException">The scan boundaries are invalid</exception>
         /// <returns>Scanned blocks hardness matrix, [x,y,z]</returns>
         public async Task<double[,,]> Scan(int x, int z, int y, int width, int depth, int height, bool ignoreReplaceable = false)
         {
             if (width < 0 || depth < 0 || height < 0) throw new GeolyzerException("Invalid dimensions (Size cannot be negative)");
             if (width * depth * height > 64) throw new GeolyzerException("Volume too large (Maximum is 64)");
+            var maxRange = (await this.GetDeviceInfo()).Capacity;
+            var maxX = x + width - 1;
+            var maxY = y + height - 1;
+            var maxZ = z + depth - 1;
+            if(x > maxRange || y > maxRange || z > maxRange || maxX > maxRange || maxY > maxRange || maxZ > maxRange) throw new GeolyzerException("Location out of bounds");
             var res = await Parent.Execute($@"table.unpack({await GetHandle()}.scan({x},{z},{y},{width},{depth},{height},{ignoreReplaceable.Luaify()}))");
             var raw = res.Linq.Select(x => x.Value.AsDouble).ToArray();
             var ret = new double[width, height, depth];

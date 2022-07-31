@@ -22,13 +22,14 @@ server.onConnected += async (Machine machine) => {
     try
     {
         var components = await machine.GetComponents();
-        if(components.TryGet<HologramComponent>(out var holo))
+        if (components.TryGet<HologramComponent>(out var holo))
         {
             await holo.SetRotationAngle(45, 0, 0);
         }
-        if(components.TryGet<ScreenComponent>(out var screen) && components.TryGet<GraphicsCardComponent>(out var gpu))
+        if (components.TryGet<ScreenComponent>(out var screen) && components.TryGet<GraphicsCardComponent>(out var gpu))
         {
-            if(await gpu.Bind(screen))
+            await gpu.Hook("set", (og) => $"local params={{...}}params[1]=params[1]+10 return {og}(table.unpack(params))");
+            if (await gpu.Bind(screen))
             {
                 await gpu.Set(1, 1, "Hello from RemoteOS! Current GPU Tier: " + ((int)await gpu.GetTier() + 1) + ", Total VRAM: " + await gpu.GetTotalMemory() + " Max resolution: " + await gpu.GetHardwareMaxResolution());
                 await gpu.Copy(1, 1, 20, 1, 0, 1);
@@ -51,6 +52,7 @@ server.onConnected += async (Machine machine) => {
                 await gpu.Set(1, 4, "This is a GPU component test...");
                 await gpu.SetForeground(Color.White);
                 await gpu.SetBackground(Color.Black);
+                await gpu.Unhook("set");
                 if (components.TryGet<KeyboardComponent>(out var keyboard))
                 {
                     keyboard.KeyDown += async (c, key, player) =>

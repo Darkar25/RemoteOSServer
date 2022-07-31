@@ -5,6 +5,8 @@ VisualStudioVersion = 17.1.32319.34
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RemoteOSServer", "RemoteOSServer\RemoteOSServer.csproj", "{658C41A8-DBC9-4557-8E78-DF5189DF7020}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteOS.Example", "RemoteOS.Example\RemoteOS.Example.csproj", "{AA5B06EE-41F3-499E-ABE7-6AE6370EAE5E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{658C41A8-DBC9-4557-8E78-DF5189DF7020}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{658C41A8-DBC9-4557-8E78-DF5189DF7020}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{658C41A8-DBC9-4557-8E78-DF5189DF7020}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA5B06EE-41F3-499E-ABE7-6AE6370EAE5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA5B06EE-41F3-499E-ABE7-6AE6370EAE5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA5B06EE-41F3-499E-ABE7-6AE6370EAE5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA5B06EE-41F3-499E-ABE7-6AE6370EAE5E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

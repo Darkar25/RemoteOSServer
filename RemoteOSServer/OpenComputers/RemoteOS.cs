@@ -39,6 +39,33 @@ namespace RemoteOS.OpenComputers
         /// <param name="component">The component</param>
         /// <returns>The component`s device info</returns>
         public static async Task<DeviceInfo> GetDeviceInfo(this Component component) => (await component.Parent.Computer.GetDeviceInfo()).TryGetValue(component.Address, out var ret) ? ret : default;
+        /// <summary>
+        /// Hook to the specified method to intercept its execution and/or modify the return value
+        /// <br>Be careful with this method. You may break the server if you do something wrong</br>
+        /// </summary>
+        /// <remarks>
+        /// Function argument passes the original method call, you can use this in your hook code to call the original method and get its return value
+        /// </remarks>
+        /// <param name="component">Which component to hook</param>
+        /// <param name="method">Whick method to hook</param>
+        /// <param name="code">The hook code</param>
+        public static async Task Hook(this Component component, string method, Func<string, string> code)
+        {
+            var hooked = $"{await component.GetHandle()}.{method}";
+            var original = $"global.hook[\"{hooked}\"]";
+            await component.Parent.RawExecute($"global.hook=global.hook or{{}} if {original}==nil then {original}={hooked} {hooked}=function(...) {code(original)} end end");
+        }
+        /// <summary>
+        /// Removes the hook from the method
+        /// </summary>
+        /// <param name="component">The component that had been hooked</param>
+        /// <param name="method">The method that had been hooked</param>
+        public static async Task Unhook(this Component component, string method)
+        {
+            var hooked = $"{await component.GetHandle()}.{method}";
+            var original = $"global.hook[\"{hooked}\"]";
+            await component.Parent.RawExecute($"global.hook=global.hook or{{}} if {original}~=nil then {hooked}={original} {original}=nil end");
+        }
 
         #endregion
         #region InventoryController
