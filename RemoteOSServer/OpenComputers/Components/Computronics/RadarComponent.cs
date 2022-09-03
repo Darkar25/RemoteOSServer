@@ -16,7 +16,7 @@ namespace RemoteOS.OpenComputers.Components.Computronics
         /// <returns>Player List</returns>
         public async Task<IEnumerable<Entity>> GetPlayers(int distance)
         {
-            return (await Invoke("getPlayers", distance))[0].Linq.ToArray()
+            return (await Invoke("getPlayers", distance))[0].Linq
                 .Select(player => new Entity(player.Value["name"], player.Value["distance"])).ToList();
         }
 
@@ -27,7 +27,7 @@ namespace RemoteOS.OpenComputers.Components.Computronics
         /// <returns>Enitities List</returns>
         public async Task<IEnumerable<Entity>> GetEntities(int distance)
         {
-            return (await Invoke("getEntities", distance))[0].Linq.ToArray()
+            return (await Invoke("getEntities", distance))[0].Linq
                 .Select(entity => new Entity(entity.Value["name"], entity.Value["distance"])).ToList();
         }
         /// <summary>
