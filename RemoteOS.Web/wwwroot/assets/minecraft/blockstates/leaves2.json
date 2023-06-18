@@ -1,0 +1,6 @@
+{
+    "variants": {
+        "acacia": { "model": "acacia_leaves" },
+        "dark_oak": { "model": "dark_oak_leaves" }
+    }
+}

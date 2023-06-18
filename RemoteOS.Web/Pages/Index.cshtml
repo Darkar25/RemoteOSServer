@@ -1,0 +1,785 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<ul id="computerlist" style="position:absolute">
+</ul>
+<div class="debug left"><span>RemoteOS Web Interface 0.1-alpha<br><span id="fps">0</span>/<span id="fpsavg">0</span> fps T: inf<br><br>XYZ: <span id="xyz">0.00 / 0.00 / 0.00</span><br>Block: <span id="block">0 0 0</span><br>Facing: <span id="facing">north (Towards negative Z) (0 / 0)</span><br><span id="lookingat"></span></span></div>
+<div class="debug right"><span>ThreeJS: <span id="threejsver">Loading...</span><br><br>Display: <span id="display">Loading...</span> (<span id="gpu">Loading...</span>)<br><br><span id="hoverinfo"></span></span></div>
+<div class="mc-popup waila"><div class="blockname" id="waila-blockname"></div><ul id="waila-properties"></ul><div id="waila-harvesttool"></div><div id="waila-harvestlevel"></div><div class="modname" id="waila-modname"></div></div>
+
+<script src="~/js/signalr/dist/browser/signalr.js"></script>
+<script src="~/js/mergician/util.js"></script>
+<script src="~/js/mergician/index.js"></script>
+<script src="~/js/log_scale.js"></script>
+<script type="importmap">
+  {
+	"imports": {
+	  "three": "./lib/three/build/three.module.js",
+	  "OrbitControls": "./js/OrbitControls.js",
+	  "mc-three": "./js/mc-three.js",
+	  "three-text2d": "./js/three-text2d.js",
+	  "three-mesh-bvh": "./js/three-mesh-bvh.js"
+	}
+  }
+</script>
+<script type="module">
+	import { InstancedMesh, Matrix4, BoxBufferGeometry, MeshBasicMaterial, PerspectiveCamera, Scene, Color, HemisphereLight, WebGLRenderer, FileLoader, BoxGeometry, Mesh, MeshLambertMaterial, Vector3, Raycaster, REVISION, BufferGeometry } from 'three';
+	// This is used for navigating on the scene
+	import { OrbitControls } from 'OrbitControls';
+	// This is used for rendering analyzed blocks
+	import { MinecraftModelLoader, MinecraftTextureLoader, MinecraftTexture, MinecraftModelMaterial } from 'mc-three';
+	// This is used for rendering agent names
+	import { SpriteText2D, textAlign } from 'three-text2d';
+	// Faster raycasting, just in case it will some day make fps go down
+	import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
+
+	BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+	BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+	Mesh.prototype.raycast = acceleratedRaycast;
+
+	// Write some info in the right side of debug screen
+	var gpuinfo = gpu();
+	$("#gpu").text(gpuinfo.vendor + ";" + gpuinfo.renderer);
+	$("#threejsver").text(REVISION);
+	$("#display").text(window.innerWidth + "x" + window.innerHeight);
+	$(".debug").hide();
+	$(".waila").hide();
+
+	// Fps counter fields
+	var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
+
+	var selectedAgent = "";
+
+	const hoverMaterial = new MeshBasicMaterial({transparent: true,opacity: 0.75,color: new Color().setHex( 0x00FF00 ),alphaTest: .01});
+	const transparentMaterial = new MeshBasicMaterial({transparent: true,opacity: 0,alphaTest: .01});
+	const selectMaterial = new MeshBasicMaterial({transparent: true,opacity: 0.75,color: new Color().setHex( 0x0000FF ),alphaTest: .01});
+	const checkerboardTexture = new MinecraftTexture();
+	checkerboardTexture.image = null;
+	const checkerboardMaterial = new MinecraftModelMaterial(checkerboardTexture);
+	const colors = [
+	  new Color(0x00FF00),
+	  new Color(0xFFFF00),
+	  new Color(0xFF0000),
+	  new Color(0xFF00FF),
+	  new Color(0x0000FF),
+	  new Color(0x00FFFF)
+	];
+	
+	// Scene initialization
+	const camera = new PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 100 );
+	camera.position.z = 4;
+	const scene = new Scene();
+	scene.background = new Color( 0xffffff );
+	scene.add(new HemisphereLight(new Color(0xFFFFFF), new Color(0x888888), 1));
+	window.renderer = new WebGLRenderer( { antialias: true, logarithmicDepthBuffer: true } );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.setAnimationLoop( animate );
+	document.body.appendChild( renderer.domElement );
+	var controls = new OrbitControls(camera, renderer.domElement);
+
+	// Textures cache
+	var textures = {};
+
+	const instances = 10000;
+	
+	var models = {};
+	var colliders = {};
+	var blockstates = {};
+	var keys = new Array(instances);
+	if(Object.seal) {
+	  // fill array with some value because
+	  // empty slots can not be changed after calling Object.seal
+	  keys.fill(undefined);
+
+	  Object.seal(keys);
+	  // now a is a fixed-size array with mutable entries
+	}
+	var modelLoader = new MinecraftModelLoader();
+	var fileLoader = new FileLoader();
+	fileLoader.setResponseType('json');
+	modelLoader.resolveParentModel = async (currentModel, path) => {
+		if(path === "item/generated")
+			return {elements: [{from: [ 0, 0, 0 ], to: [ 16, 0, 16 ], faces: { down: {texture: "#layer0" }, up: {texture: "#layer0" }}}]};
+		let namespace, model;
+		if (path.indexOf(':') === -1) {
+			namespace = 'minecraft';
+			model = path;
+		} else {
+			const pathPieces = path.split(/\:/g);
+			namespace = pathPieces[0];
+			model = pathPieces[1];
+		}
+		const resolver = (resolve, reject) => fileLoader.load(`assets/${namespace}/models/${model}.json`, (result) => resolve(result), null, (error) => resolve({parent: "block/cube_all",textures: {all: "missingno"}}));
+		var res = await new Promise(resolver);
+		return res;
+	};
+	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+	window.addEventListener( 'resize', onWindowResize, false );
+	controls.addEventListener( 'change', onControlsChange, false );
+	window.needReRender = true;
+	
+	const instanced = new InstancedMesh( new BoxBufferGeometry(1, 1, 1), new MeshLambertMaterial({transparent: true,opacity: .75,color: 0xFFFFFF,alphaTest: .01}), instances );
+	var emptyMatrix = new Matrix4();
+	instanced.getMatrixAt(0, emptyMatrix);
+	for (let i = 0; i < instances; i++) {
+		instanced.setColorAt(i, instanced.material.color);
+	}
+	scene.add(instanced);
+	const hoverBox = new Mesh(new BoxBufferGeometry(1, 1, 1), [transparentMaterial, hoverMaterial]);
+	hoverBox.renderOrder = 1;
+	scene.add(hoverBox);
+
+	function onControlsChange() {
+		window.needReRender = true;
+	}
+
+	function updateFpsCounter() {
+		frames ++;
+
+		var time = ( performance || Date ).now();
+		$("#fps").text(Math.round(1000 / (time - beginTime)));
+		if ( time >= prevTime + 1000 ) {
+			var fps = ( frames * 1000 ) / ( time - prevTime );
+			$("#fpsavg").text(Math.round(fps));
+			prevTime = time;
+			frames = 0;
+		}
+
+		beginTime = time;
+	}
+
+	function addBlock(blockstate) {
+		if(!blockstate.Properties && blockstate.Props) {
+			blockstate.Properties = JSON.parse(blockstate.Props);
+			delete blockstate.Props;
+		}
+		var key = `${blockstate.X}:${blockstate.Y}:${blockstate.Z}`;
+		if(blockstates[key]) removeBlock(blockstate);
+		if(blockstate.ModName == "minecraft" && blockstate.Name == "air") return;
+		if(!blockstate.Name) { // The block is scanned
+			// We don`t have enough information to render a model so just make a colored cube
+			blockstates[key] = blockstate;
+			var instIndex = keys.findIndex(val => val == undefined);
+			keys[instIndex] = key;
+			const interpol = new LogScale(0, 100).logarithmicToLinear(blockstate.Hardness);
+			const matrix = new Matrix4();
+			matrix.setPosition( blockstate.X, blockstate.Y, blockstate.Z );
+			instanced.setMatrixAt(instIndex, matrix );
+			instanced.setColorAt(instIndex, multiColorLerp(colors, interpol));
+			instanced.instanceMatrix.needsUpdate = true;
+			instanced.instanceColor.needsUpdate = true;
+			window.needReRender = true;
+			return;
+		}
+		const handleload = mesh => {
+			const textureLoader = new MinecraftTextureLoader();
+			mesh.resolveTextures(path => {
+				if(textures[path]) return textures[path];
+				let namespace, texture;
+				if (path.indexOf(':') === -1) {
+					namespace = 'minecraft';
+					texture = path;
+				} else {
+					const pathPieces = path.split(/\:/g);
+					namespace = pathPieces[0];
+					texture = pathPieces[1];
+				}
+
+				return (textures[path] = textureLoader.load(`assets/${namespace}/textures/${texture}.png`));
+			});
+			mesh.scale.x = .0625;
+			mesh.scale.y = .0625;
+			mesh.scale.z = .0625;
+			mesh.position.x = blockstate.X;
+			mesh.position.y = blockstate.Y;
+			mesh.position.z = blockstate.Z;
+			models[key] = models[key] ?? [];
+			models[key].push(mesh);
+			scene.add(mesh);
+		};
+		var pendingModels = 0;
+		fileLoader.load(`assets/${blockstate.ModName}/blockstates/${blockstate.Name}.json`, (states) => {
+			if(states.variants) {
+				for (const [key, value] of Object.entries(states.variants)) {
+					var props = key.split(',');
+					var match = true;
+					for (const val of props) {
+						var entry = val.split('=');
+						if(entry.length == 1) match = match && String(blockstate.Properties["variant"] ?? "normal") == entry[0];
+						else match = match && String(blockstate.Properties[entry[0]]) == entry[1];
+						if(!match) break;
+					}
+					if(match) {
+						var apply;
+						if(Array.isArray(value)) apply = value[weightedRand(value.map((a) => a.weight ?? 1))];
+						else apply = value;
+						load(apply);
+						pendingModels++;
+						break;
+					}
+				}
+			} else if(states.multipart) {
+				for (const [key, value] of Object.entries(states.multipart)) {
+					var match = true;
+					if(value.when) {
+						if(!value.when.OR) value.when = {OR: [value.when]};
+						for (const val of value.when.OR) {
+							match = true;
+							for (const [key1, value1] of Object.entries(val)) {
+								match = match && value1.split('|').includes(String(blockstate.Properties[key1]));
+								if(!match) break;
+							}
+							if(match) break;
+						}
+					}
+					if(match) {
+						var apply;
+						if(Array.isArray(value.apply)) apply = value.apply[weightedRand(value.apply.map((a) => a.weight ?? 1))];
+						else apply = value.apply;
+						load(apply);
+						pendingModels++;
+					}
+				}
+			}
+		}, null, (err) => {
+			// Failed to load the blockstate, so we put a checkerboard cube in its place.
+			const geo = new BoxGeometry(1, 1, 1);
+			const mesh = new Mesh( geo, [checkerboardMaterial, hoverMaterial, selectMaterial] );
+			for(const face of mesh.geometry.groups)
+				face.materialIndex = 0;
+			mesh.position.x = blockstate.X;
+			mesh.position.y = blockstate.Y;
+			mesh.position.z = blockstate.Z;
+			mesh.userData.blockstate = blockstate;
+			scene.add(mesh);
+			models[key] = models[key] ?? [];
+			models[key].push(mesh);
+			mesh.collider = mesh;
+			colliders[key] = mesh;
+		});
+		function load(apply) {
+			if (apply.model.indexOf(':') !== -1) {
+				const pathPieces = apply.model.split(/\:/g);
+				apply.model = pathPieces[1];
+			}
+			modelLoader.load(`assets/${blockstate.ModName}/models/block/${apply.model}.json`, (model) => {
+				handleload(model);
+				var model = models[key][models[key].length - 1];
+				if(apply.x)
+					model.rotation.x = -apply.x * (Math.PI / 180);
+				if(apply.y)
+					model.rotation.y = -apply.y * (Math.PI / 180);
+				pendingModels--;
+				if(pendingModels == 0) { // Synchronization thingy, so the collider does not override the block`s material
+					const geo = new BoxGeometry(1, 1, 1);
+					const collider = new Mesh( geo, [transparentMaterial, hoverMaterial, selectMaterial] );
+					for(const face of geo.groups)
+						face.materialIndex = 0;
+					collider.position.x = blockstate.X;
+					collider.position.y = blockstate.Y;
+					collider.position.z = blockstate.Z;
+					collider.userData.blockstate = blockstate;
+					blockstates[key] = blockstate;
+					scene.add(collider);
+					colliders[key] = collider;
+					for(const a of models[key])
+						a.collider = collider;
+					window.needReRender = true;
+				}
+			}, null, (e) => console.log(e));
+		}
+		window.needReRender = true;
+	}
+	
+	function removeBlock(blockstate) {
+		if(!blockstate.Properties && blockstate.Props) {
+			blockstate.Properties = JSON.parse(blockstate.Props);
+			delete blockstate.Props;
+		}
+		var key = `${blockstate.X}:${blockstate.Y}:${blockstate.Z}`;
+		if(models[key]) {
+			for(const model of models[key]) {
+				scene.remove(model);
+				model.geometry.dispose();
+			}
+			delete models[key];
+			scene.remove(colliders[key]);
+			colliders[key].geometry.dispose();
+			delete colliders[key];
+			delete blockstates[key];
+			window.needReRender = true;
+		} else if(blockstates[key]) {
+			var instIndex = keys.indexOf(key);
+			instanced.setMatrixAt(instIndex, emptyMatrix);
+			instanced.instanceMatrix.needsUpdate = true;
+			keys[instIndex] = undefined;
+			delete blockstates[key];
+			window.needReRender = true;
+		}
+	}
+	
+	function weightedRand(weights) {
+		var totalWeight = 0,
+			i, random;
+
+		for (i = 0; i < weights.length; i++) {
+			totalWeight += weights[i];
+		}
+
+		random = Math.random() * totalWeight;
+
+		for (i = 0; i < weights.length; i++) {
+			if (random < weights[i]) {
+				return i;
+			}
+
+			random -= weights[i];
+		}
+
+		return -1;
+	}
+ 
+    // loop
+    function animate(time) {
+		$("#xyz").text((Math.round(controls.target.x * 1000) / 1000) + " / " + (Math.round(controls.target.y * 100000) / 100000) + " / " + (Math.round(controls.target.z * 1000) / 1000));
+		$("#block").text(Math.round(controls.target.x) + " " + Math.round(controls.target.y) + " " + Math.round(controls.target.z));
+		var horiz = Math.round(controls.getAzimuthalAngle() * (180 / Math.PI) * 10) / 10;
+		var vert = Math.round((controls.getPolarAngle() * (-180 / Math.PI) + 90) * 10) / 10;
+		var facing = "";
+		if((horiz <= -135 && horiz > -180) || (horiz <= 180 && horiz > 135)) facing = "south (Towards positive Z)";
+		else if(horiz <= 135 && horiz > 45) facing = "west (Towards negative X)";
+		else if(horiz <= 45 && horiz > -45) facing = "north (Towards negative Z)";
+		else facing = "east (Towards positive X)";
+		$("#facing").text(facing + " (" + horiz + " / " + vert + ")");
+		if (MinecraftTexture.update() || window.needReRender) renderer.render(scene, camera);
+		window.needReRender = false;
+		updateFpsCounter();
+    };
+	
+	var INTERSECTED;
+	var HoveredBlock = {Face:null,Data:null};
+	
+	function onDocumentMouseMove( event ) {
+		var vector = new Vector3( 
+      ( event.clientX / window.innerWidth ) * 2 - 1, 
+      - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
+   vector.unproject( camera );
+		var ray = new Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+		// create an array containing all objects in the scene with which the ray intersects
+		var list = [instanced];
+		for(const arr of Object.values(models)) {
+			list = list.concat(arr);
+		}
+		var intersects = ray.intersectObjects( list );
+		if ( intersects.length > 0 )
+		{
+			var sorted = intersects.sort((a, b) => a.distance - b.distance);
+			var col = undefined;
+			var blockstate = undefined;
+			if(sorted[0].instanceId != undefined) {
+				var col = sorted[0];
+				var key = keys[sorted[0].instanceId];
+				var blockstate = blockstates[key];
+			} else {
+				intersects = ray.intersectObjects( [sorted[0].object.collider] );
+				if ( intersects.length == 0 ) intersects = ray.intersectObjects( Object.values(colliders) );
+				if ( intersects.length > 0 )
+				{
+					col = intersects.sort((a, b) => a.distance - b.distance)[0];
+					blockstate = col.object.userData.blockstate;
+				}
+			}
+			if(col != undefined) {
+				if ( INTERSECTED ) {
+					for(const face of hoverBox.geometry.groups)
+						face.materialIndex = 0;
+				}
+				// store reference to closest object as current intersection object
+				INTERSECTED = col.object;
+				var index = Math.floor( col.faceIndex / 2 );
+
+				hoverBox.position.x = blockstate.X;
+				hoverBox.position.y = blockstate.Y;
+				hoverBox.position.z = blockstate.Z;
+				hoverBox.geometry.groups[index].materialIndex = 1;
+
+				window.needReRender = window.needReRender || HoveredBlock.Data != blockstate || HoveredBlock.Face != index;
+
+				HoveredBlock.Face = index;
+				HoveredBlock.Data = blockstate;
+
+				if(HoveredBlock.Data.ModName) {
+					var html = HoveredBlock.Data.ModName + ":" + HoveredBlock.Data.Name + "<br>";
+					$("#waila-properties").empty();
+
+					Object.keys(HoveredBlock.Data.Properties).forEach(function(key, index) {
+						var value = HoveredBlock.Data.Properties[key];
+						if (typeof value == "boolean") {
+							html += key + ": <span class='bool-"+value+"'>" + value + "</span><br>";
+							$("<li>"+key+": <span class='bool-"+value+"'>" + value + "</span></li>").appendTo("#waila-properties");
+						} else {
+							html += key + ": " + value + "<br>";
+							$("<li>"+key+": " + value + "</li>").appendTo("#waila-properties");
+						}
+					});
+
+					$("#waila-harvesttool").html("");
+					if(HoveredBlock.Data.HarvestTool) $("#waila-harvesttool").html(resolveName("wailaharvestability.effectivetool") + "<span class='mc-dark_green'>" + resolveName("wailaharvestability.toolclass." + HoveredBlock.Data.HarvestTool) + "</span>");
+					$("#waila-harvestlevel").html("");
+					if(HoveredBlock.Data.HarvestLevel > 0) $("#waila-harvestlevel").html(resolveName("wailaharvestability.harvestlevel") + "<span class='mc-dark_green'>" + HoveredBlock.Data.HarvestLevel + "</span>");
+					
+					$("#hoverinfo").html(html);
+					$("#waila-modname").text(HoveredBlock.Data.ModName);
+					$("#waila-blockname").text(resolveObjectName(HoveredBlock.Data));
+					$(".waila").show();
+				} else {
+					$("#hoverinfo").html("");
+					$(".waila").hide();
+				}
+				$("#lookingat").text("Looking at: " + HoveredBlock.Data.X + " " + HoveredBlock.Data.Y + " " + HoveredBlock.Data.Z);
+			}
+		} else {
+			// restore previous intersection object (if it exists) to its original color
+			if ( INTERSECTED ) {
+				for(const face of hoverBox.geometry.groups)
+					face.materialIndex = 0;
+
+				$("#hoverinfo").html("");
+				$("#lookingat").text("");
+				$(".waila").hide();
+
+				window.needReRender = true;
+			}
+
+			// remove previous intersection object reference
+			//     by setting current intersection object to "nothing"
+			INTERSECTED = null;
+
+			HoveredBlock.Face = null;
+			HoveredBlock.Data = null;
+		}
+	}
+
+	function onWindowResize(){
+
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+
+		renderer.setSize( window.innerWidth, window.innerHeight );
+
+		$("#display").text(window.innerWidth + "x" + window.innerHeight);
+
+		window.needReRender = true;
+	}
+
+	function multiColorLerp(colors, t) {
+	  var i0 = t * colors.length;
+	  var i1 = Math.floor(i0);
+	  var i2 = i1 + 1;
+
+	  if (i2 >= colors.length) return colors[colors.length-1];
+
+	  var color1 = colors[i1];
+	  var color2 = colors[i2];
+	  var a = i0 % 1;
+
+	  var ret = new Color().lerpColors(color1, color2, a);
+
+	  // Some old logging stuff since when i had issues with color lerping
+	  /*var clr1str = ('000000'+color1.getHex().toString(16)).slice(-6);
+	  var clr2str = ('000000'+color2.getHex().toString(16)).slice(-6);
+	  var lrpstr = ('000000'+ret.getHex().toString(16)).slice(-6);
+
+	  console.log("%c■%c#" +
+	  clr1str +
+	  "->%c■%c#" +
+	  clr2str +
+	  " at " +
+	  (a * 100) +
+	  "% = %c■%c#" +
+	  lrpstr, "color: #" + clr1str, '', "color: #" + clr2str, '', "color: #" + lrpstr, '');*/
+
+	  return ret;
+	}
+
+	window.list = { @foreach (var c in Model.context.Computers)
+	{
+		<text>'@(c.Address)': {status:'@(Model.manager.IsReady(c)?"ready":Model.manager.IsOnline(c)?"online":"offline")', 'position': {}, 'render': {}},</text>
+	}
+	};
+	window.renderedAgents = {};
+
+	function Reload() {
+		document.getElementById("computerlist").innerHTML = "";
+		for(var index in list) { 
+			var li = document.createElement("li");
+			li.textContent = `${index}`;
+			var btn = document.createElement("btn");
+			btn.className = "btn " + (list[index].status == "ready" ? "btn-outline-success" : list[index].status == "selected" ? "btn-outline-warning" : list[index].status == "online" ? "btn-outline-info" : "btn-outline-danger");
+			btn.textContent = list[index].status == "ready" ? "READY" : list[index].status == "selected" ? "SELECTED" : list[index].status == "online" ? "AWAITING POSITION" : "OFFLINE";
+			btn.onclick = ((e) => {return function() {
+				if(list[e].status == "ready" || list[e].status == "selected") {
+					if(selectedAgent != "") list[selectedAgent].status = "ready";
+					list[e].status = "selected";
+					selectedAgent = e;
+					// Point the camera to the selected agent
+					controls.target.x = list[e].position.X;
+					controls.target.y = list[e].position.Y;
+					controls.target.z = list[e].position.Z;
+					Reload();
+				} else {
+					if(confirm("Do you want to edit the position of agent '"+e+"'?")) {
+						var x = Number(prompt("X coordinate", 0));
+						if(x == null) return;
+						var y = Number(prompt("Y coordinate", 0));
+						if(y == null) return;
+						var z = Number(prompt("Z coordinate", 0));
+						if(z == null) return;
+						var facing = Number(prompt("Facing: north - 2, west - 4, south - 3, east - 5", 2));
+						if(facing == null) return;
+						connection.invoke("SetPosition", e, {X: x, Y: y, Z: z}, facing).catch(function (err) {
+							return console.error(err.toString());
+						});
+					}
+				}
+			};})(index);
+			li.appendChild(btn);
+			document.getElementById("computerlist").appendChild(li);
+		}
+		window.needReRender = true;
+	}
+	Reload();
+
+	var connection = new signalR.HubConnectionBuilder().withUrl("/hub/main").build();
+	connection.on("Connected", function (address) {
+		list[address] = list[address] ?? {position:{},render:{}};
+		list[address].status = "online";
+		Reload();
+	});
+	connection.on("Disconnected", function (address) {
+		list[address] = list[address] ?? {position:{},render:{}};
+		list[address].status = "offline";
+		Reload();
+		scene.remove(renderedAgents[address].model);
+		scene.remove(renderedAgents[address].nametag);
+		delete renderedAgents[address];
+	});
+	connection.on("World", function (data) {
+		data = JSON.parse(data);
+		console.log(data);
+		for(const blockstate of data) {
+			addBlock(blockstate);
+		}
+	});
+	connection.on("AgentPosition", function (data) {
+		data = JSON.parse(data);
+		console.log(data);
+		if(list[data.Address].status == "online") list[data.Address].status = "ready";
+		list[data.Address].position = data;
+		Reload();
+		UpdateRenderedAgentPositions(data.Address);
+	});
+	connection.on("AgentRender", function (data) {
+		data = JSON.parse(data);
+		console.log(data);
+		Object.keys(data).forEach(function(key, index) {
+			if(key == "Address") return;
+			list[data.Address].render[key] = data[key];
+		});
+		renderedAgents[data.Address] = renderedAgents[data.Address] ?? {};
+		if(data.DisplayName)
+			if(renderedAgents[data.Address].nametag)
+				renderedAgents[data.Address].nametag.text = data.DisplayName;
+			else {
+				renderedAgents[data.Address].nametag = new SpriteText2D(data.DisplayName, { align: textAlign.center,  font: '40px MonoCraft', fillStyle: '#fff', backgroundColor: '#0009' , antialias: false });
+				renderedAgents[data.Address].nametag.scale.x = .005;
+				renderedAgents[data.Address].nametag.scale.y = .005;
+				scene.add(renderedAgents[data.Address].nametag);
+			}
+		if(data.Type) {
+			var model = "";
+			switch(data.Type) {
+				case "robot": model = "remoteos:robot_active"; break;
+				case "drone": model = "remoteos:drone"; break;
+				case "computer": model = "opencomputers:case1"; break;
+				case "microcontroller": model = "opencomputers:microcontroller"; break;
+				default: break;
+			}
+			var modname = "";
+			if (model.indexOf(':') !== -1) {
+				const pathPieces = model.split(/\:/g);
+				model = pathPieces[1];
+				modname = pathPieces[0];
+			}
+			modelLoader.load(`assets/${modname}/models/block/${model}.json`, (mesh) => {
+				const textureLoader = new MinecraftTextureLoader();
+				mesh.resolveTextures(path => {
+					if(textures[path]) return textures[path];
+					let namespace, texture;
+					if (path.indexOf(':') === -1) {
+						namespace = 'minecraft';
+						texture = path;
+					} else {
+						const pathPieces = path.split(/\:/g);
+						namespace = pathPieces[0];
+						texture = pathPieces[1];
+					}
+
+					return (textures[path] = textureLoader.load(`assets/${namespace}/textures/${texture}.png`));
+				});
+				mesh.scale.x = .0625;
+				mesh.scale.y = .0625;
+				mesh.scale.z = .0625;
+				renderedAgents[data.Address].model = mesh;
+				scene.add(mesh);
+				if(data.Color) {
+					var matkey = Object.keys(renderedAgents[data.Address].model.materialMapping).filter(name => name.endsWith("_light"))[0] ?? renderedAgents[data.Address].model.materialMapping[Object.keys(renderedAgents[data.Address].model.materialMapping)[0]];
+					renderedAgents[data.Address].model.materialMapping[matkey].color = new Color().setHex(data.Color);
+				}
+				window.needReRender = true;
+				UpdateRenderedAgentPositions(data.Address);
+			}, null, (e) => console.log(e));
+		}
+		if(data.Color && renderedAgents[data.Address].model) {
+			var matkey = Object.keys(renderedAgents[data.Address].model.materialMapping).filter(name => name.endsWith("_light"))[0] ?? renderedAgents[data.Address].model.materialMapping[Object.keys(renderedAgents[data.Address].model.materialMapping)[0]];
+			renderedAgents[data.Address].model.materialMapping[matkey].color = new Color().setHex(data.Color);
+		}
+		UpdateRenderedAgentPositions(data.Address);
+	});
+
+	function UpdateRenderedAgentPositions(address) {
+		if(renderedAgents[address].model) {
+			renderedAgents[address].model.position.x = list[address].position.X;
+			renderedAgents[address].model.position.y = list[address].position.Y;
+			renderedAgents[address].model.position.z = list[address].position.Z;
+			switch(list[address].position.Facing) {
+				 case 4: renderedAgents[address].model.rotation.y = 90 * (Math.PI / 180); break;
+				 case 3: renderedAgents[address].model.rotation.y = 180 * (Math.PI / 180); break;
+				 case 5: renderedAgents[address].model.rotation.y = 270 * (Math.PI / 180); break;
+				 default: renderedAgents[address].model.rotation.y = 0; break;
+			}
+		}
+		if(renderedAgents[address].nametag) {
+			renderedAgents[address].nametag.position.x = list[address].position.X;
+			renderedAgents[address].nametag.position.y = list[address].position.Y + .75;
+			renderedAgents[address].nametag.position.z = list[address].position.Z;
+		}
+		window.needReRender = true;
+	}
+
+	connection.start().then(function () {
+		connection.invoke("GetWorld").catch(function (err) {
+			return console.error(err.toString());
+		});
+		connection.invoke("GetAgents").catch(function (err) {
+			return console.error(err.toString());
+		});
+	}).catch(function (err) {
+		return console.error(err.toString());
+	});
+	document.addEventListener( 'keyup', onDocumentKeyUp, false );
+
+	function onDocumentKeyUp( event ) {
+		var action = "";
+		switch(event.key.toLowerCase()) {
+			case 'w':
+			action = "forward";
+			break;
+			case 'a':
+			action = "left";
+			break;
+			case 's':
+			action = "back";
+			break;
+			case 'd':
+			action = "right";
+			break;
+			case ' ':
+			action = "up";
+			break;
+			case 'shift':
+			action = "down";
+			break;
+			case 'f4':
+			$(".debug").toggle();
+			break;
+		}
+		if(action != "")
+			connection.invoke("MoveAction", selectedAgent, action).catch(function (err) {
+				return console.error(err.toString());
+			});
+	}
+
+	window.mods = [
+		@foreach(var m in Directory.EnumerateDirectories("wwwroot/assets").Select(System.IO.Path.GetFileName)) {
+			<text>'@(m)',</text>
+		}
+	];
+	var language = (navigator.language || navigator.userLanguage).replace('-', '_');
+	window.langMap = {};
+	window.langMappers = [];
+	var langLoader = new FileLoader();
+	mods.forEach((i,e) => {
+		var handleLangFile = (lang) => {
+			var lines = lang.split("\n").filter((e) => e != "" && e[0] != "#");
+			console.log(lines);
+			lines.forEach((e,i) => {
+				_.set(langMap, _.toLower(e.substring(0, e.indexOf('='))), e.substring(e.indexOf('=') + 1, e.length));
+			});
+		};
+		langLoader.load(`assets/${i}/lang/${language}.lang`, (lang) => {
+			handleLangFile(lang);
+		}, null, (err) => {
+			langLoader.load(`assets/${i}/lang/en_US.lang`, (lang) => {
+				handleLangFile(lang);
+			}, null, (err) => {
+				console.log(err);
+			});
+		});
+		langLoader.load(`assets/${i}/lang/mapper.js`, (mapper) => {
+			eval(mapper);
+		});
+	});
+
+	function gpu() {
+		var canvas = document.createElement('canvas');
+		var gl;
+		var debugInfo;
+		try {
+			gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+			debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+			if ((gl === null) || (debugInfo === null)) return '';
+		} catch (e) {
+			return '';
+		}
+		return {vendor:gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL), renderer:gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)}
+	}
+
+	function resolveObjectName(obj) {
+		var localePath = undefined;
+		for (var i = 0; i < langMappers.length && !localePath; i++) {
+			localePath = langMappers[i](obj);
+		}
+		if(localePath) return resolveName(localePath + ".name");
+		localePath = (obj.Count ? "item" : "tile") + "." + obj.Name + ".name";
+		var ret = resolveNameUndef(localePath);
+		if(ret) return ret;
+		localePath = (obj.Count ? "item" : "tile") + "." + obj.ModName + "." + obj.Name + ".name";
+		return resolveName(localePath);
+	}
+
+	function resolveName(name) {
+		return resolveNameUndef(name) ?? name;
+	}
+
+	function resolveNameUndef(name) {
+		return _.get(langMap, _.toLower(name));
+	}
+
+	window.resolveObjectName = resolveObjectName;
+	window.resolveName = resolveName;
+</script>

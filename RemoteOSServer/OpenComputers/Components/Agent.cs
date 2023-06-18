@@ -1,5 +1,10 @@
-﻿using RemoteOS.OpenComputers.Exceptions;
+﻿using OneOf;
+using OneOf.Types;
+using RemoteOS.Helpers;
+using RemoteOS.OpenComputers.Exceptions;
+using RemoteOS.OpenComputers.Data;
 using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace RemoteOS.OpenComputers.Components
 {
@@ -50,21 +55,25 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="side">Side to perform the action on</param>
         /// <param name="sneaky">Perform action while sneaking (like when pressing the Shift key)</param>
         /// <returns>Whether the action was successful and if it was not, the reason why</returns>
-        public async Task<(bool Success, string Reason)> Swing(Sides side = Sides.Front, bool sneaky = false)
+        public async Task<ReasonOr<Success>> Swing(Sides side = Sides.Front, bool sneaky = false)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             var cmd = await Invoke("swing", side, sneaky);
-            return (cmd[0], cmd[1]);
+            if (!cmd[0]) return cmd[1].Value;
+            return new Success();
         }
+
         /// <inheritdoc cref="Swing(Sides, bool)"/>
         /// <param name="face">The `face' allows a more precise click calibration, and is relative to the targeted blockspace.</param>
-        public async Task<(bool Success, string Reason)> Swing(Sides side, Sides face, bool sneaky = false)
+        public async Task<ReasonOr<Success>> Swing(Sides side, Sides face, bool sneaky = false)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
-            if (face == side.Opposite()) throw new InvalidSideException("Face cannot be opposite to the side.");
-            var cmd = await Invoke("swing", side, face, sneaky);
-            return (cmd[0], cmd[1]);
-        }
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
+			face.ThrowIfOppositeTo(side);
+			var cmd = await Invoke("swing", side, face, sneaky);
+			if (!cmd[0]) return cmd[1].Value;
+			return new Success();
+		}
+
         /// <summary>
         /// Perform a 'right click' towards the specified side.
         /// </summary>
@@ -72,58 +81,68 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="sneaky">Perform action while sneaking (like when pressing the Shift key)</param>
         /// <param name="duration">How long the agent has to perform this action</param>
         /// <returns>Whether the action was successful and if it was not, the reason why</returns>
-        public async Task<(bool Success, string Reason)> Use(Sides side = Sides.Front, bool sneaky = false, int duration = 0)
+        public async Task<ReasonOr<Success>> Use(Sides side = Sides.Front, bool sneaky = false, int duration = 0)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             var cmd = await Invoke("use", side, sneaky, duration);
-            return (cmd[0], cmd[1]);
-        }
+			if (!cmd[0]) return cmd[1].Value;
+			return new Success();
+		}
+
         /// <inheritdoc cref="Use(Sides, bool, int)"/>
         /// <param name="face">The `face' allows a more precise click calibration, and is relative to the targeted blockspace.</param>
-        public async Task<(bool Success, string Reason)> Use(Sides side, Sides face, bool sneaky = false, int duration = 0)
+        public async Task<ReasonOr<Success>> Use(Sides side, Sides face, bool sneaky = false, int duration = 0)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
-            if (face == side.Opposite()) throw new InvalidSideException("Face cannot be opposite to the side.");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
+            face.ThrowIfOppositeTo(side);
             var cmd = await Invoke("use", side, face, sneaky, duration);
-            return (cmd[0], cmd[1]);
-        }
+			if (!cmd[0]) return cmd[1].Value;
+			return new Success();
+		}
+
         /// <summary>
         /// Place a block towards the specified side.
         /// </summary>
         /// <param name="side">Side to perform the action on</param>
         /// <param name="sneaky">Perform action while sneaking (like when pressing the Shift key)</param>
         /// <returns>Whether the action was successful and if it was not, the reason why</returns>
-        public async Task<(bool Success, string Reason)> Place(Sides side = Sides.Front, bool sneaky = false)
+        public async Task<ReasonOr<Success>> Place(Sides side = Sides.Front, bool sneaky = false)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             var cmd = await Invoke("place", side, sneaky);
-            return (cmd[0], cmd[1]);
-        }
+			if (!cmd[0]) return cmd[1].Value;
+			return new Success();
+		}
+
         /// <inheritdoc cref="Place(Sides, bool)"/>
         /// <param name="face">The `face' allows a more precise click calibration, and is relative to the targeted blockspace.</param>
-        public async Task<(bool Success, string Reason)> Place(Sides side, Sides face, bool sneaky = false)
+        public async Task<ReasonOr<Success>> Place(Sides side, Sides face, bool sneaky = false)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
-            if (face == side.Opposite()) throw new InvalidSideException("Face cannot be opposite to the side.");
-            var cmd = await Invoke("place", side, face, sneaky);
-            return (cmd[0], cmd[1]);
-        }
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
+			face.ThrowIfOppositeTo(side);
+			var cmd = await Invoke("place", side, face, sneaky);
+			if (!cmd[0]) return cmd[1].Value;
+			return new Success();
+		}
+
         /// <param name="slot">The slot to get the item count from</param>
         /// <returns>The number of items in the specified slot</returns>
         /// <exception cref="InventoryException">This slot does not exist</exception>
         public async Task<int> Count(int slot)
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("count", slot))[0];
+            return await InvokeFirst("count", slot);
         }
+
         /// <param name="slot">The slot to get the remaining space from</param>
         /// <returns>The remaining space in the specified slot</returns>
         /// <exception cref="InventoryException">This slot does not exist</exception>
         public async Task<int> Space(int slot)
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("space", slot))[0];
+            return await InvokeFirst("space", slot);
         }
+
         /// <summary>
         /// Compare the contents of the selected slot to the contents of the specified slot.
         /// </summary>
@@ -134,8 +153,9 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CompareTo(int slot, bool checkNBT = false)
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("compareTo", slot, checkNBT))[0];
+            return await InvokeFirst("compareTo", slot, checkNBT);
         }
+
         /// <summary>
         /// Move up to the specified amount of items from the selected slot into the specified slot.
         /// </summary>
@@ -145,31 +165,35 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> TransferTo(int slot)
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("transferTo", slot))[0];
+            return await InvokeFirst("transferTo", slot);
         }
+
         /// <inheritdoc cref="TransferTo(int)"/>
         /// <param name="amount">How much to transfer</param>
         public async Task<bool> TransferTo(int slot, int amount)
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("transferTo", slot, amount))[0];
+            return await InvokeFirst("transferTo", slot, amount);
         }
+
         /// <param name="slot">The tank to get level from</param>
         /// <returns>The fluid amount in the specified tank.</returns>
         /// <exception cref="InventoryException">This tank does not exist</exception>
         public async Task<int> TankLevel(int slot)
         {
             if (slot <= 0 || slot > await GetTankCount()) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            return (await Invoke("tankLevel", slot))[0];
+            return await InvokeFirst("tankLevel", slot);
         }
+
         /// <param name="slot">The tank to get remaining space from</param>
         /// <returns>The remaining fluid capacity in the specified tank.</returns>
         /// <exception cref="InventoryException">This tank does not exist</exception>
         public async Task<int> TankSpace(int slot)
         {
             if (slot <= 0 || slot > await GetTankCount()) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            return (await Invoke("tankSpace", slot))[0];
+            return await InvokeFirst("tankSpace", slot);
         }
+
         /// <summary>
         /// Compares the fluids in the selected and the specified tank.
         /// </summary>
@@ -179,8 +203,9 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CommareFluidTo(int slot)
         {
             if (slot <= 0 || slot > await GetTankCount()) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            return (await Invoke("compareFluidTo", slot))[0];
+            return await InvokeFirst("compareFluidTo", slot);
         }
+
         /// <summary>
         /// Move the specified amount of fluid from the selected tank into the specified tank.
         /// </summary>
@@ -191,8 +216,9 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> TransferFluidTo(int slot, int amount = 1000)
         {
             if (slot <= 0 || slot > await GetTankCount()) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            return (await Invoke("transferFluidTo", slot, amount))[0];
+            return await InvokeFirst("transferFluidTo", slot, amount);
         }
+
         /// <summary>
         /// Checks the contents of the block on the specified sides and returns the findings.
         /// </summary>
@@ -200,10 +226,11 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Whether the block is passable and its description</returns>
         public async Task<(bool Passable, string Description)> Detect(Sides side)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             var res = await Invoke("detect", side);
             return (!res[0], res[1]);
         }
+
         /// <summary>
         /// Compare the fluid in the selected tank with the fluid in the specified tank on the specified side.
         /// </summary>
@@ -211,33 +238,38 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>true is fluids are equal, otherwise false</returns>
         public async Task<bool> CompareFluid(Sides side)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
-            return (await Invoke("compareFluid", side))[0];
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
+            return await InvokeFirst("compareFluid", side);
         }
+
         /// <summary>
         /// Drains the specified amount of fluid from the specified side.
         /// </summary>
         /// <param name="side">The side to drain from</param>
         /// <param name="amount">How much to drain</param>
-        /// <returns>Whether the drain was successful and the amount if it was</returns>
-        public async Task<(bool Success, int Amount)> Drain(Sides side, int amount = 1000)
+        /// <returns>The amount drainer or an error</returns>
+        public async Task<OneOf<int, Error>> Drain(Sides side, int amount = 1000)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             var res = await Invoke("drain", side, amount);
-            return (res[0], res[1]);
-        }
+			if (!res[0]) return new Error();
+			return res[1].AsInt;
+		}
+
         /// <summary>
         /// Eject the specified amount of fluid to the specified side.
         /// </summary>
         /// <param name="side">The side to fill into</param>
         /// <param name="amount">How much to fill</param>
-        /// <returns>Whether the fill was successful and the amount if it was</returns>
-        public async Task<(bool Success, int Amount)> Fill(Sides side, int amount = 1000)
+        /// <returns>The amount filled or an error</returns>
+        public async Task<OneOf<int, Error>> Fill(Sides side, int amount = 1000)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             var res = await Invoke("fill", side, amount);
-            return (res[0], res[1]);
-        }
+			if (!res[0]) return new Error();
+			return res[1].AsInt;
+		}
+
         /// <summary>
         /// Compare the block on the specified side with the one in the selected slot.
         /// </summary>
@@ -249,9 +281,10 @@ namespace RemoteOS.OpenComputers.Components
         /// for these cases, use silk-touch to obtain a block for comparison.</remarks>
         public async Task<bool> Compare(Sides side, bool fuzzy = false)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
-            return (await Invoke("compare", side, fuzzy))[0];
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
+            return await InvokeFirst("compare", side, fuzzy);
         }
+
         /// <summary>
         /// Drops items from the selected slot towards the specified side.
         /// </summary>
@@ -260,35 +293,42 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>true if items were dropped succesfully, otherwise false</returns>
         public async Task<bool> Drop(Sides side, int amount = 64)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
-            return (await Invoke("drop", side, amount))[0];
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
+            return await InvokeFirst("drop", side, amount);
         }
+
         /// <summary>
         /// Suck up items from the specified side.
         /// </summary>
         /// <param name="side">The to suck from</param>
         /// <param name="amount">How many items to suck</param>
-        /// <returns>Whether the suction was successful and the amount if it was</returns>
-        public async Task<(bool Success, int Amount)> Suck(Sides side, int amount = 64)
+        /// <returns>The amount sucked or an error</returns>
+        public async Task<OneOf<int, Error>> Suck(Sides side, int amount = 64)
         {
-            if ((int)side > 3 || side == Sides.Back) throw new InvalidSideException("Valid sides are Bottom, Top, Front");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             var res = await Invoke("suck", side, amount);
-            var f = res[0].IsBoolean;
-            return (!f, f ? 0 : res[0]);
+			if (res[0].IsBoolean) return new Error();
+			return res[0].AsInt;
         }
+
         /// <returns>The name of agent.</returns>
-        public async Task<string> GetName() => _name ??= (await Invoke("name"))[0];
+        public async Task<string> GetName() => _name ??= await InvokeFirst("name");
+
         /// <returns>The current color of the activity light</returns>
-        public async Task<Color> GetLightColor() => _color ??= Color.FromArgb((await Invoke("getLightColor"))[0]);
+        public async Task<Color> GetLightColor() => _color ??= Color.FromArgb(await InvokeFirst("getLightColor"));
+
         /// <summary>
         /// Set the color of the activity light to the specified color
         /// </summary>
         /// <param name="color">New color</param>
-        public async Task SetLightColor(Color color) => _color = Color.FromArgb((await Invoke("setLightColor", color))[0]);
+        public async Task SetLightColor(Color color) => _color = Color.FromArgb(await InvokeFirst("setLightColor", color));
+
         /// <returns>The size of this device's internal inventory.</returns>
         public async Task<int> GetInventorySize() => (await this.GetDeviceInfo()).Capacity;
+
         /// <returns>The currently selected slot</returns>
-        public async Task<int> GetSelectedSlot() => _selectedSlot ??= (await Invoke("select"))[0];
+        public async Task<int> GetSelectedSlot() => _selectedSlot ??= await InvokeFirst("select");
+
         /// <summary>
         /// Set the selected slot
         /// </summary>
@@ -298,16 +338,21 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
             if (slot == await GetSelectedSlot()) return; //Nothing to do
-            _selectedSlot = (await Invoke("select", slot))[0];
+            _selectedSlot = await InvokeFirst("select", slot);
         }
+
         /// <returns>The number of items in the selected slot</returns>
-        public async Task<int> GetSelectedSlotCount() => (await Invoke("count"))[0];
+        public async Task<int> GetSelectedSlotCount() => await InvokeFirst("count");
+
         /// <returns>The remaining space in the selected slot</returns>
-        public async Task<int> GetSelectedSlotSpace() => (await Invoke("space"))[0];
+        public async Task<int> GetSelectedSlotSpace() => await InvokeFirst("space");
+
         /// <returns>The number of tanks installed in the device.</returns>
-        public async Task<int> GetTankCount() => _tnkCount ??= (await Invoke("tankCount"))[0];
+        public async Task<int> GetTankCount() => _tnkCount ??= await InvokeFirst("tankCount");
+
         /// <returns>The number of the currently selected tank.</returns>
-        public async Task<int> GetSelectedTank() => _selectedTank ??= (await Invoke("selectTank"))[0];
+        public async Task<int> GetSelectedTank() => _selectedTank ??= await InvokeFirst("selectTank");
+
         /// <summary>
         /// Select a tank and get the number of the currently selected tank.
         /// </summary>
@@ -318,28 +363,35 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (tank <= 0 || tank > await GetTankCount()) throw new InventoryException(InventoryException.NO_SUCH_TANK);
             if (tank != await GetSelectedTank()) //Check if we really need to change the tank
-                _selectedTank = (await Invoke("selectTank", tank))[0];
+                _selectedTank = await InvokeFirst("selectTank", tank);
             return await GetSelectedTank();
         }
+
         /// <returns>The fluid amount in the selected tank.</returns>
-        public async Task<int> GetSelectedTankLevel() => (await Invoke("tankLevel"))[0];
+        public async Task<int> GetSelectedTankLevel() => await InvokeFirst("tankLevel");
+
         /// <returns>The remaining space in the selected tank.</returns>
-        public async Task<int> GetSelectedTankSpace() => (await Invoke("tankSpace"))[0];
+        public async Task<int> GetSelectedTankSpace() => await InvokeFirst("tankSpace");
 
 #if ROS_PROPERTIES
         public string Name => GetName().Result;
+
         public Color Color
         {
             get => GetLightColor().Result;
             set => SetLightColor(value);
         }
+
         public int InventorySize => GetInventorySize().Result;
+
         public int SelectedSlot
         {
             get => GetSelectedSlot().Result;
             set => SetSelectedSlot(value);
         }
+
         public int TankCount => GetTankCount().Result;
+
         public int SelectedTank
         {
             get => GetSelectedTank().Result;
@@ -347,8 +399,11 @@ namespace RemoteOS.OpenComputers.Components
         }
 #if ROS_PROPS_UNCACHED
         public int SelectedSlotCount => GetSelectedSlotCount().Result;
+
         public int SelectedSlotSpace => GetSelectedSlotSpace().Result;
+
         public int SelectedTankLevel => GetSelectedTankLevel().Result;
+
         public int SelectedTankSpace => GetSelectedTankSpace().Result;
 #endif
 #endif

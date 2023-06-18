@@ -1,0 +1,20 @@
+{
+    "variants": {
+        "color=white": { "model": "white_concrete_powder" },
+        "color=orange": { "model": "orange_concrete_powder" },
+        "color=magenta": { "model": "magenta_concrete_powder" },
+        "color=light_blue": { "model": "light_blue_concrete_powder" },
+        "color=yellow": { "model": "yellow_concrete_powder" },
+        "color=lime": { "model": "lime_concrete_powder" },
+        "color=pink": { "model": "pink_concrete_powder" },
+        "color=gray": { "model": "gray_concrete_powder" },
+        "color=silver": { "model": "silver_concrete_powder" },
+        "color=cyan": { "model": "cyan_concrete_powder" },
+        "color=purple": { "model": "purple_concrete_powder" },
+        "color=blue": { "model": "blue_concrete_powder" },
+        "color=brown": { "model": "brown_concrete_powder" },
+        "color=green": { "model": "green_concrete_powder" },
+        "color=red": { "model": "red_concrete_powder" },
+        "color=black": { "model": "black_concrete_powder" }
+    }
+}

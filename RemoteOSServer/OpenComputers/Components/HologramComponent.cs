@@ -2,12 +2,13 @@
 using RemoteOS.OpenComputers.Data;
 using System.Drawing;
 using System.Numerics;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
     //Palette and content is not cached since the hologram is EXTERNAL component and some other machine may modify its data
     [Component("hologram")]
-    public class HologramComponent : Component
+    public partial class HologramComponent : Component
     {
         public const int Width = 48;
         public const int Height = 32;
@@ -17,14 +18,17 @@ namespace RemoteOS.OpenComputers.Components
         int? _maxDepth;
         public readonly Vector3 Dimensions = new(Width, Height, Width);
 
+        public override async Task<Tier> GetTier() => (Tier)await GetMaxDepth() - 1;
+
         /// <param name="index">Palette index</param>
         /// <returns>The color defined for the specified value.</returns>
         /// <exception cref="PaletteException">This palette index is invalid</exception>
         public async Task<Color> GetPaletteColor(int index)
         {
-            if (index <= 0 || (await this.GetTier() < Tier.Two ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
-            return Color.FromArgb((await Invoke("getPaletteColor", index))[0]);
+            if (index <= 0 || (await GetTier() < Tier.Two ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
+            return Color.FromArgb(await InvokeFirst("getPaletteColor", index));
         }
+
         /// <summary>
         /// Set the color defined for the specified value.
         /// </summary>
@@ -34,14 +38,17 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="PaletteException">This palette index is invalid</exception>
         public async Task<Color> SetPaletteColor(int index, Color color)
         {
-            if (index <= 0 || (await this.GetTier() < Tier.Two ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
-            return Color.FromArgb((await Invoke("setPaletteColor", index, color))[0]);
+            if (index <= 0 || (await GetTier() < Tier.Two ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
+            return Color.FromArgb(await InvokeFirst("setPaletteColor", index, color));
         }
-        public async Task<int> GetMaxDepth() => _maxDepth ??= (await Invoke("maxDepth"))[0];
+
+        public async Task<int> GetMaxDepth() => _maxDepth ??= await InvokeFirst("maxDepth");
+
         /// <summary>
         /// Clears the hologram.
         /// </summary>
-        public async Task Clear() => await Invoke("clear");
+        public partial Task Clear();
+
         /// <param name="x">X coordinate of the voxel</param>
         /// <param name="y">Y coordinate of the voxel</param>
         /// <param name="z">Z coordinate of the voxel</param>
@@ -52,11 +59,13 @@ namespace RemoteOS.OpenComputers.Components
             if (x < 0 || x >= Dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));
             if (y < 0 || y >= Dimensions.Y) throw new ArgumentOutOfRangeException(nameof(x));
             if (z < 0 || z >= Dimensions.Z) throw new ArgumentOutOfRangeException(nameof(z));
-            return (await Invoke("get", x, y, z))[0];
+            return await InvokeFirst("get", x, y, z);
         }
+
         /// <inheritdoc cref="Get(int, int, int)"/>
         /// <param name="pos">Position of the voxel</param>
-        public async Task<int> Get(Vector3 pos) => await Get((int)pos.X, (int)pos.Y, (int)pos.Z);
+        public Task<int> Get(Vector3 pos) => Get((int)pos.X, (int)pos.Y, (int)pos.Z);
+
         /// <summary>
         /// Set the value for the specified voxel.
         /// </summary>
@@ -65,22 +74,26 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="z">Z coordinate of the voxel</param>
         /// <param name="index">Palette index of the voxel</param>
         /// <exception cref="ArgumentOutOfRangeException">The coordinates are outside of the hologram bounds</exception>
-        public async Task Set(int x, int y, int z, int index)
+        public Task Set(int x, int y, int z, int index)
         {
             if (x < 0 || x >= Dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));
             if (y < 0 || y >= Dimensions.Y) throw new ArgumentOutOfRangeException(nameof(x));
             if (z < 0 || z >= Dimensions.Z) throw new ArgumentOutOfRangeException(nameof(z));
-            await Invoke("set", x, y, z, index);
+            return Invoke("set", x, y, z, index);
         }
+
         /// <inheritdoc cref="Set(int, int, int, int)"/>
         /// <param name="ison">The state of the voxel</param>
-        public async Task Set(int x, int y, int z, bool ison) => await Set(x, y, z, ison ? 1 : 0);
+        public Task Set(int x, int y, int z, bool ison) => Set(x, y, z, ison ? 1 : 0);
+
         /// <inheritdoc cref="Set(int, int, int, int)"/>
         /// <param name="pos">Position of the voxel</param>
-        public async Task Set(Vector3 pos, int index) => await Set((int)pos.X, (int)pos.Y, (int)pos.Z, index);
+        public Task Set(Vector3 pos, int index) => Set((int)pos.X, (int)pos.Y, (int)pos.Z, index);
+
         /// <inheritdoc cref="Set(int, int, int, bool)"/>
         /// <param name="pos">Position of the voxel</param>
-        public async Task Set(Vector3 pos, bool ison) => await Set((int)pos.X, (int)pos.Y, (int)pos.Z, ison);
+        public Task Set(Vector3 pos, bool ison) => Set((int)pos.X, (int)pos.Y, (int)pos.Z, ison);
+
         /// <summary>
         /// Fills an interval of a column with the specified value.
         /// </summary>
@@ -90,23 +103,26 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="index">Palette index</param>
         /// <param name="minY">Minimum Y Position</param>
         /// <exception cref="ArgumentOutOfRangeException">The coordinates are outside of the hologram bounds</exception>
-        public async Task Fill(int x, int z, int maxY, int index, int minY = 1)
+        public Task Fill(int x, int z, int maxY, int index, int minY = 1)
         {
             if (x < 0 || x >= Dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));
             if (z < 0 || z >= Dimensions.Z) throw new ArgumentOutOfRangeException(nameof(z));
             if (minY <= 0 || minY >= Dimensions.Y) throw new ArgumentOutOfRangeException(nameof(minY));
             if (maxY <= 0 || maxY >= Dimensions.Y) throw new ArgumentOutOfRangeException(nameof(maxY));
             if (minY > maxY) throw new ArgumentOutOfRangeException(nameof(minY), "Interval is empty");
-            await Invoke("fill", x, z, minY, maxY, index);
+            return Invoke("fill", x, z, minY, maxY, index);
         }
+
         /// <inheritdoc cref="Fill(int, int, int, int, int)"/>
         /// <param name="ison">The state of the voxel</param>
-        public async Task Fill(int x, int z, int maxY, bool ison, int minY = 1) => await Fill(x, z, maxY, ison ? 1 : 0, minY);
+        public Task Fill(int x, int z, int maxY, bool ison, int minY = 1) => Fill(x, z, maxY, ison ? 1 : 0, minY);
+
         /// <summary>
         /// Set the raw buffer to the specified byte array, where each byte represents a voxel color. Nesting is x,z,y.
         /// </summary>
         /// <param name="data">The voxel data</param>
-        public async Task SetRaw(string data) => await Invoke("setRaw", data);
+        public partial Task SetRaw(string data);
+
         /// <summary>
         /// Copies an area of columns by the specified translation.
         /// </summary>
@@ -117,32 +133,36 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="tx">X translation</param>
         /// <param name="tz">Z translation</param>
         /// <exception cref="ArgumentOutOfRangeException">The coordinates are outside of the hologram bounds</exception>
-        public async Task Copy(int x, int z, int width, int height, int tx, int tz)
+        public Task Copy(int x, int z, int width, int height, int tx, int tz)
         {
+            if (tx == 0 && tz == 0) return Task.CompletedTask;
             if (x < 0 || x >= Dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));
             if (z < 0 || z >= Dimensions.Z) throw new ArgumentOutOfRangeException(nameof(z));
             if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException("Size cannot be negative");
-            if (tx == 0 && tz == 0) return;
-            await Invoke("copy", x, z, width, height, tx, tz);
+            return Invoke("copy", x, z, width, height, tx, tz);
         }
+
         /// <returns>The render scale of the hologram.</returns>
-        public async Task<float> GetScale() => (await Invoke("getScale"))[0];
+        public partial Task<float> GetScale();
+
         /// <summary>
         /// Set the render scale. A larger scale consumes more energy.
         /// </summary>
         /// <param name="scale">The new scale</param>
         /// <exception cref="ArgumentOutOfRangeException">The scale is too small</exception>
-        public async Task SetScale(float scale)
+        public Task SetScale(float scale)
         {
             if (scale < 1f / 3f) throw new ArgumentOutOfRangeException(nameof(scale), "Scale is too small");
-            await Invoke("setScale", scale);
+            return Invoke("setScale", scale);
         }
+
         /// <returns>The relative render projection offsets of the hologram.</returns>
         public async Task<Vector3> GetTranslation()
         {
             var res = await Invoke("getTranslation");
             return new(res[0], res[1], res[2]);
         }
+
         /// <summary>
         /// Sets the relative render projection offsets of the hologram.
         /// </summary>
@@ -155,9 +175,11 @@ namespace RemoteOS.OpenComputers.Components
             if (y < 0) throw new ArgumentOutOfRangeException(nameof(y), "Unsupported translation value");
             await Invoke("setTranslation", x, y, z);
         }
+
         /// <inheritdoc cref="SetTranslation(float, float, float)"/>
         /// <param name="pos">Translation</param>
-        public async Task SetTranslation(Vector3 pos) => await SetTranslation(pos.X, pos.Y, pos.Z);
+        public Task SetTranslation(Vector3 pos) => SetTranslation(pos.X, pos.Y, pos.Z);
+
         /// <summary>
         /// Set the base rotation of the displayed hologram.
         /// </summary>
@@ -169,12 +191,14 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="NotSupportedException">This holographic projector does not support rotation</exception>
         public async Task<bool> SetRotation(float angle, float x, float y, float z)
         {
-            if (await this.GetTier() < Tier.Two) throw new NotSupportedException("Rotation is not supported on this tier of holographic projector");
-            return (await Invoke("setRotation", angle, x, y, z))[0];
+            if (await GetTier() < Tier.Two) throw new NotSupportedException("Rotation is not supported on this tier of holographic projector");
+            return await InvokeFirst("setRotation", angle, x, y, z);
         }
+
         /// <inheritdoc cref="SetRotation(float, float, float, float)"/>
         /// <param name="rotationVector">Rotation vector</param>
-        public async Task<bool> SetRotation(float angle, Vector3 rotationVector) => await SetRotation(angle, rotationVector.X, rotationVector.Y, rotationVector.Z);
+        public Task<bool> SetRotation(float angle, Vector3 rotationVector) => SetRotation(angle, rotationVector.X, rotationVector.Y, rotationVector.Z);
+
         /// <summary>
         /// Set the rotation speed of the displayed hologram.
         /// </summary>
@@ -187,21 +211,24 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="ArgumentOutOfRangeException">Rotation is too fast</exception>
         public async Task<bool> SetRotationSpeed(float speed, float x, float y, float z)
         {
-            if (await this.GetTier() < Tier.Two) throw new NotSupportedException("Rotation is not supported on this tier of holographic projector");
+            if (await GetTier() < Tier.Two) throw new NotSupportedException("Rotation is not supported on this tier of holographic projector");
             if (speed < -340 * 4 || speed > 340 * 4) throw new ArgumentOutOfRangeException(nameof(speed), "Rotation cannot be that fast");
-            return (await Invoke("setRotationSpeed", speed, x, y, z))[0];
+            return await InvokeFirst("setRotationSpeed", speed, x, y, z);
         }
+
         /// <inheritdoc cref="SetRotationSpeed(float, float, float, float)"/>
         /// <param name="rotationVector">Rotation vector</param>
-        public async Task<bool> SetRotationSpeed(float speed, Vector3 rotationVector) => await SetRotationSpeed(speed, rotationVector.X, rotationVector.Y, rotationVector.Z);
+        public Task<bool> SetRotationSpeed(float speed, Vector3 rotationVector) => SetRotationSpeed(speed, rotationVector.X, rotationVector.Y, rotationVector.Z);
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public int MaxDepth => GetMaxDepth().Result;
+
         public float Scale
         {
             get => GetScale().Result;
             set => SetScale(value);
         }
+        
         public Vector3 Translation
         {
             get => GetTranslation().Result;

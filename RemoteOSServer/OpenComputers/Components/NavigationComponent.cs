@@ -1,9 +1,12 @@
-﻿using RemoteOS.OpenComputers.Data;
+﻿using OneOf;
+using RemoteOS.OpenComputers.Data;
 using System.Numerics;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
     [Component("navigation")]
+    [Tier(Tier.Two)]
     public class NavigationComponent : Component
     {
         public NavigationComponent(Machine parent, Guid address) : base(parent, address)
@@ -19,39 +22,38 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>A list of found waypoints</returns>
         public async Task<IEnumerable<WaypointInfo>> GetWaypoints(int range)
         {
-            var res = await Invoke("findWaypoints", range);
-            List<WaypointInfo> ret = new();
-            foreach (var w in res.Values)
-                ret.Add(new()
-                {
-                    Label = w["label"],
-                    RedstoneLevel = w["redstone"],
-                    RelativePosition = new(w["position"][0], w["position"][1], w["position"][2])
-                });
-            return ret;
+            return (await Invoke("findWaypoints", range)).Linq.Select(x => new WaypointInfo
+            {
+				Label = x.Value["label"],
+				RedstoneLevel = x.Value["redstone"],
+				RelativePosition = new(x.Value["position"][0], x.Value["position"][1], x.Value["position"][2])
+			});
         }
-        /// <returns>The current relative position of the robot.</returns>
-        public async Task<(bool Success, string Reason, Vector3 Position)> GetPosition()
+
+        /// <returns>The current relative position of the robot or the reason why it could not be retrieved.</returns>
+        public async Task<ReasonOr<Vector3>> GetPosition()
         {
             var res = await Invoke("getPosition");
             if (res[0].IsNull)
-                return (false, res[1], default);
+                return new Reason(res[1].Value);
             else
-                return (true, "", new(res[0], res[1], res[2]));
+                return new Vector3(res[0], res[1], res[2]);
         }
+
         /// <returns>The current orientation of the robot.</returns>
-        public async Task<Sides> GetFacing() => (Sides)(await Invoke("getFacing"))[0].AsInt;
+        public async Task<Sides> GetFacing() => (Sides)(await InvokeFirst("getFacing")).AsInt;
+
         /// <returns>The operational range of the navigation upgrade.</returns>
-        public async Task<int> GetRange() => _range ??= (await Invoke("getRange"))[0];
+        public async Task<int> GetRange() => _range ??= await InvokeFirst("getRange");
 
 #if ROS_PROPERTIES
 #if ROS_PROPS_UNCACHED
-        public (bool Success, string Reason, Vector3 Position) Position => GetPosition().Result;
+        public ReasonOr<Vector3> Position => GetPosition().Result;
 
         public Sides Facing => GetFacing().Result;
 #endif
 
-        public int Range => GetRange().Result;
+		public int Range => GetRange().Result;
 #endif
     }
 }

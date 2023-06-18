@@ -1,0 +1,16 @@
+{
+    "variants": {
+        "type=oak,stage=0": { "model": "oak_sapling" },
+        "type=oak,stage=1": { "model": "oak_sapling" },
+		"type=spruce,stage=0": { "model": "spruce_sapling" },
+        "type=spruce,stage=1": { "model": "spruce_sapling" },
+		"type=birch,stage=0": { "model": "birch_sapling" },
+        "type=birch,stage=1": { "model": "birch_sapling" },
+		"type=jungle,stage=0": { "model": "jungle_sapling" },
+        "type=jungle,stage=1": { "model": "jungle_sapling" },
+		"type=acacia,stage=0": { "model": "acacia_sapling" },
+        "type=acacia,stage=1": { "model": "acacia_sapling" },
+		"type=dark_oak,stage=0": { "model": "dark_oak_sapling" },
+        "type=dark_oak,stage=1": { "model": "dark_oak_sapling" }
+    }
+}

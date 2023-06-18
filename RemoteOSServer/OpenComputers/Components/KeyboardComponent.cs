@@ -1,4 +1,5 @@
 ﻿using RemoteOS.OpenComputers.Data;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {

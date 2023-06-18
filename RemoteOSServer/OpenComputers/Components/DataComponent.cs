@@ -1,23 +1,30 @@
 ﻿using EasyJSON;
+using OneOf;
+using OneOf.Types;
 using RemoteOS.OpenComputers;
+using RemoteOS.OpenComputers.Data;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
     [Obsolete("Use cryptography methods defined on the server, not on the remote machine.")]
     [Component("data")]
-    public class DataComponent : Component
+    public partial class DataComponent : Component
     {
         int? _limit;
+
         public DataComponent(Machine parent, Guid address) : base(parent, address)
         {
         }
 
+        public override async Task<Tier> GetTier() => (Tier)(await Parent.Execute($"({await GetHandle()}.ecdh and 2) or ({await GetHandle()}.random and 1) or 0"))[0].AsInt;
+
         /// <returns>The maximum size of data that can be passed to other functions of the card.</returns>
-        public async Task<int> GetLimit() => _limit ??= 
-        #if ROS_GLOBAL_CACHING
+        public async Task<int> GetLimit() => _limit ??=
+#if ROS_GLOBAL_CACHING
             GlobalCache.dataCardHardLimit ??=
-        #endif 
-            (await Invoke("getLimit"))[0];
+#endif
+            await InvokeFirst("getLimit");
 
 #if ROS_PROPERTIES
         public int Limit => GetLimit().Result;
@@ -29,44 +36,44 @@ namespace RemoteOS.OpenComputers.Components
         /// Computes CRC-32 hash of the data. Result is binary data.
         /// </summary>
         /// <param name="message">Message to compute hash on</param>
-        /// <returns>Hash of the specified message</returns>
-        public async Task<string> CRC32(string message) => (await Invoke("crc32", message))[0];
+        /// <returns>Hash of the specified message</returns>4
+        public partial Task<string> CRC32(string message);
         /// <summary>
         /// Applies base64 encoding to the data.
         /// </summary>
         /// <param name="message">Message to encode</param>
         /// <returns>Encoded message</returns>
-        public async Task<string> Encode64(string message) => (await Invoke("encode64", message))[0];
+        public partial Task<string> Encode64(string message);
         /// <summary>
         /// Applies base64 decoding to the data.
         /// </summary>
         /// <param name="message">Encoded message</param>
         /// <returns>Decoded message</returns>
-        public async Task<string> Decode64(string message) => (await Invoke("decode64", message))[0];
+        public partial Task<string> Decode64(string message);
         /// <summary>
         /// Computes MD5 hash of the data. Result is binary data.
         /// </summary>
         /// <param name="message">The message to compute hash on</param>
         /// <returns>Hash of the specified message</returns>
-        public async Task<string> MD5(string message) => (await Invoke("md5", message))[0];
+        public partial Task<string> MD5(string message);
         /// <summary>
         /// Computes SHA2-256 hash of the data. Result is binary data.
         /// </summary>
         /// <param name="message">The message to compute hash on</param>
         /// <returns>Hash of the specified message</returns>
-        public async Task<string> SHA256(string message) => (await Invoke("sha256", message))[0];
+        public partial Task<string> SHA256(string message);
         /// <summary>
         /// Applies deflate compression to the data.
         /// </summary>
         /// <param name="message">Message to deflate</param>
         /// <returns>Compressed message</returns>
-        public async Task<string> Deflate(string message) => (await Invoke("deflate", message))[0];
+        public partial Task<string> Deflate(string message);
         /// <summary>
         /// Applies inflate decompression to the data.
         /// </summary>
         /// <param name="message">Deflated message</param>
         /// <returns>Decoded message</returns>
-        public async Task<string> Inflate(string message) => (await Invoke("inflate", message))[0];
+        public partial Task<string> Inflate(string message);
 
         #endregion
         #region Tier 2
@@ -78,7 +85,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="key">Key to encrypt with</param>
         /// <param name="iv">Enryption vector</param>
         /// <returns>Encrypted data</returns>
-        public async Task<string> Encrypt(string message, string key, string iv) => (await Invoke("encrypt", message, key, iv))[0];
+        public partial Task<string> Encrypt(string message, string key, string iv);
         /// <summary>
         /// Decrypt data with AES.
         /// </summary>
@@ -86,20 +93,20 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="key">Key that the data was encrypted with</param>
         /// <param name="iv">Encryption vector</param>
         /// <returns></returns>
-        public async Task<string> Decrypt(string message, string key, string iv) => (await Invoke("encrypt", message, key, iv))[0];
+        public partial Task<string> Decrypt(string message, string key, string iv);
         /// <summary>
         /// Generates secure random binary data.
         /// </summary>
         /// <param name="length">Length of the random data</param>
         /// <returns>Random binary data</returns>
-        public async Task<string> Random(int length) => (await Invoke("random", length))[0];
+        public partial Task<string> Random(int length);
 
         #endregion
         #region Tier 3
 
         public (JSONObject priv, JSONObject pub) GenerateKeyPair(int bitLen = 384)
         {
-            if (bitLen != 256 || bitLen != 384) throw new ArgumentException("Invalid key length, must be 256 or 384");
+            if (bitLen != 256 && bitLen != 384) throw new ArgumentException("Invalid key length, must be 256 or 384");
             throw new NotSupportedException();
         }
 
@@ -113,7 +120,7 @@ namespace RemoteOS.OpenComputers.Components
             throw new NotSupportedException();
         }
 
-        public (bool Success, string Data) ECDSA(string data, JSONObject key, string sig = "")
+        public OneOf<string, Error> ECDSA(string data, JSONObject key, string sig = "")
         {
             throw new NotSupportedException();
         }

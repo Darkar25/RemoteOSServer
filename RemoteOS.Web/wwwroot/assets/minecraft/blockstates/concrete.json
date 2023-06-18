@@ -1,0 +1,20 @@
+{
+    "variants": {
+        "color=white": { "model": "white_concrete" },
+        "color=orange": { "model": "orange_concrete" },
+        "color=magenta": { "model": "magenta_concrete" },
+        "color=light_blue": { "model": "light_blue_concrete" },
+        "color=yellow": { "model": "yellow_concrete" },
+        "color=lime": { "model": "lime_concrete" },
+        "color=pink": { "model": "pink_concrete" },
+        "color=gray": { "model": "gray_concrete" },
+        "color=silver": { "model": "silver_concrete" },
+        "color=cyan": { "model": "cyan_concrete" },
+        "color=purple": { "model": "purple_concrete" },
+        "color=blue": { "model": "blue_concrete" },
+        "color=brown": { "model": "brown_concrete" },
+        "color=green": { "model": "green_concrete" },
+        "color=red": { "model": "red_concrete" },
+        "color=black": { "model": "black_concrete" }
+    }
+}

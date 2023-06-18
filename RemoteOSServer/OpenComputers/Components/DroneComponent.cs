@@ -1,7 +1,9 @@
-﻿namespace RemoteOS.OpenComputers.Components
+﻿using RemoteOS.Helpers;
+
+namespace RemoteOS.OpenComputers.Components
 {
     [Component("drone")]
-    public class DroneComponent : Agent
+    public partial class DroneComponent : Agent
     {
         /// <summary>
         /// This event is sent when the drone is hit by a entity
@@ -12,7 +14,7 @@
         /// <br>string - Name of the entity</br>
         /// </para>
         /// </summary>
-        public event Action<float, float, float, string?> Hit;
+        public event Action<float, float, float, string?>? Hit;
         public DroneComponent(Machine parent, Guid address) : base(parent, address)
         {
             parent.Listen("hit", (parameters) => {
@@ -34,27 +36,33 @@
         /// <param name="dx">Relative X position</param>
         /// <param name="dy">Relative Y position</param>
         /// <param name="dz">Relative Z position</param>
-        public async Task Move(float dx, float dy, float dz) => await Invoke("move", dx, dy, dz);
+        public partial Task Move(float dx, float dy, float dz);
+
         /// <returns>The status text currently being displayed in the GUI.</returns>
-        public async Task<string> GetStatusText() => _statusText ??= (await Invoke("getStatusText"))[0];
+        public async Task<string> GetStatusText() => _statusText ??= await InvokeFirst("getStatusText");
+
         /// <summary>
         /// Set the status text to display in the GUI.
         /// </summary>
         /// <param name="text">New status text value</param>
         /// <returns>The new status text value</returns>
-        public async Task<string> SetStatusText(string text) => _statusText = (await Invoke("setStatusText", text))[0];
+        public async Task<string> SetStatusText(string text) => _statusText = await InvokeFirst("setStatusText", text);
+
         /// <returns>The current distance to the target position.</returns>
-        public async Task<double> GetOffset() => (await Invoke("getOffset"))[0];
+        public partial Task<double> GetOffset();
+
         /// <returns>The current velocity in m/s.</returns>
-        public async Task<double> GetVelocity() => (await Invoke("getVelocity"))[0];
+        public partial Task<double> GetVelocity();
+
         /// <returns>The currently set acceleration.</returns>
-        public async Task<double> GetAcceleration() => _acceleration ??= (await Invoke("getAcceleration"))[0];
+        public async Task<double> GetAcceleration() => _acceleration ??= await InvokeFirst("getAcceleration");
+
         /// <summary>
         /// Try to set the acceleration to the specified value.
         /// </summary>
         /// <param name="accel">New acceleration value</param>
         /// <returns>The new acceleration</returns>
-        public async Task<double> SetAcceleration(double accel) => (_acceleration = (await Invoke("setAcceleration", accel))[0]).Value;
+        public async Task<double> SetAcceleration(double accel) => (_acceleration = await InvokeFirst("setAcceleration", accel)).Value;
         
 #if ROS_PROPERTIES
         public string StatusText
@@ -62,6 +70,7 @@
             get => GetStatusText().Result;
             set => SetStatusText(value);
         }
+
         public double Acceleration
         {
             get => GetAcceleration().Result;
@@ -69,6 +78,7 @@
         }
 #if ROS_PROPS_UNCACHED
         public double Offset => GetOffset().Result;
+
         public double Velocity => GetVelocity().Result;
 #endif
 #endif

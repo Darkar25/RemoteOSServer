@@ -1,0 +1,16 @@
+{
+    "variants": {
+        "oak,half=bottom": { "model": "half_slab_oak" },
+        "oak,half=top": { "model": "upper_slab_oak" },
+		"spruce,half=bottom": { "model": "half_slab_spruce" },
+        "spruce,half=top": { "model": "upper_slab_spruce" },
+		"birch,half=bottom": { "model": "half_slab_birch" },
+        "birch,half=top": { "model": "upper_slab_birch" },
+		"jungle,half=bottom": { "model": "half_slab_jungle" },
+        "jungle,half=top": { "model": "upper_slab_jungle" },
+		"acacia,half=bottom": { "model": "half_slab_acacia" },
+        "acacia,half=top": { "model": "upper_slab_acacia" },
+		"dark_oak,half=bottom": { "model": "half_slab_dark_oak" },
+        "dark_oak,half=top": { "model": "upper_slab_dark_oak" }
+    }
+}

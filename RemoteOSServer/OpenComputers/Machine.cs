@@ -1,5 +1,6 @@
 ﻿using EasyJSON;
 using NetCoreServer;
+using OneOf.Types;
 using RemoteOS.OpenComputers.Exceptions;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -12,8 +13,12 @@ namespace RemoteOS.OpenComputers
     {
         protected new RemoteOSServer Server { get; set; }
         protected ConcurrentDictionary<string, TaskCompletionSource<string[]>> executequeue = new();
-        Dictionary<string, Action<JSONArray>> SignalEvnets = new();
+        readonly Dictionary<string, Action<JSONArray>> SignalEvnets = new();
         ComponentList? _components;
+
+		// To prevent race condition
+		TaskCompletionSource<ComponentList>? cl_lock;
+
         public Machine(RemoteOSServer server) : base(server)
         {
             Server = server;
@@ -28,6 +33,8 @@ namespace RemoteOS.OpenComputers
         protected override void OnDisconnected()
         {
             new Task(() => Server.onDisconnected?.Invoke(this), TaskCreationOptions.LongRunning).Start();
+            foreach (var t in executequeue.Values)
+                t.SetCanceled();
         }
 
         /// <summary>
@@ -52,7 +59,14 @@ namespace RemoteOS.OpenComputers
                 act(new(parameters));
         }
 
-        protected override void OnReceived(byte[] buffer, long offset, long size)
+		// Perhaps change the scheme from
+		//      (e|r)\x0.*
+		// to
+		//      {"type": "signal", "data": ["some", "data", "here"]}
+		//      {"type": "success", "data": ["some", "data", "here"], "key": "asdf1234"}
+		//      {"type": "error", "data": ["error text here"], "key": "asdf1234"}
+		// this hurts performance but increases flexibility and code readability
+		protected override void OnReceived(byte[] buffer, long offset, long size)
         {
             string message = Encoding.UTF8.GetString(buffer, (int)offset, (int)size);
             var b = message.Split("\r\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -70,10 +84,7 @@ namespace RemoteOS.OpenComputers
                         break;
                     case "r":
                         if (executequeue.TryGetValue(a[1], out var task))
-                        {
                             task.SetResult(a[2..]);
-                            executequeue.Remove(a[1], out _);
-                        }
                         break;
                     default:
                         Debug.WriteLine("Unknown message " + message);
@@ -88,13 +99,13 @@ namespace RemoteOS.OpenComputers
         }
 
         /// <returns>The component list of this machine</returns>
-        public async Task<ComponentList> GetComponents() { 
-            if(_components == null)
-            {
-                _components = new(this);
-                await _components.LoadAsync();
-            }
-            return _components;
+        public async Task<ComponentList> GetComponents() {
+            if (_components is not null) return _components;
+            if (cl_lock is not null) return await cl_lock.Task;
+            cl_lock = new();
+            _components = await new ComponentList(this).LoadAsync();
+            cl_lock.SetResult(_components);
+			return _components;
         }
 
         /// <summary>
@@ -115,7 +126,8 @@ namespace RemoteOS.OpenComputers
             executequeue[key] = new(TaskCreationOptions.RunContinuationsAsynchronously);
             SendAsync(key + "\0" + command + "\r\n");
             var ret = await executequeue[key].Task;
-            var err = ret[0];
+			executequeue.Remove(key, out _);
+			var err = ret[0];
             var res = string.Join("\0", ret[1..]);
             if (!string.IsNullOrWhiteSpace(err)) throw new ExecuteException(err);
             return res;

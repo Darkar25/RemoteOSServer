@@ -1,5 +1,6 @@
 ﻿using RemoteOS.OpenComputers.Data;
 using System.Drawing;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
@@ -28,12 +29,14 @@ namespace RemoteOS.OpenComputers.Components
         }
 
         /// <returns>The pitch of the player holding the tablet.</returns>
-        public async Task<float> GetPitch() => (await Invoke("getPitch"))[0];
+        public async Task<float> GetPitch() => await InvokeFirst("getPitch");
+
         /// <returns>The yaw of the player holding the tablet.</returns>
-        public async Task<float> GetYaw() => (await Invoke("getYaw"))[0];
+        public async Task<float> GetYaw() => await InvokeFirst("getYaw");
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public float Pitch => GetPitch().Result;
+
         public float Yaw => GetYaw().Result;
 #endif
     }

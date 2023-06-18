@@ -4,70 +4,30 @@ namespace EasyJSON
 {
     public class JSONBool : JSONNode
     {
-        public override JSONNodeType Tag
-        {
-            get
-            {
-                return JSONNodeType.Boolean;
-            }
-        }
-        public override bool IsBoolean
-        {
-            get
-            {
-                return true;
-            }
-        }
-        public override JSONNode.Enumerator GetEnumerator()
-        {
-            return default(JSONNode.Enumerator);
-        }
+        public override JSONNodeType Tag => JSONNodeType.Boolean;
+        public override bool IsBoolean => true;
+        public override JSONNode.Enumerator GetEnumerator() => default;
         public override string Value
         {
-            get
-            {
-                return this.m_Data.ToString();
-            }
+            get => m_Data.ToString();
             set
             {
-                bool data;
-                if (bool.TryParse(value, out data))
-                {
-                    this.m_Data = data;
-                }
+                if (bool.TryParse(value, out bool data)) m_Data = data;
             }
         }
         public override bool AsBool
         {
-            get
-            {
-                return this.m_Data;
-            }
-            set
-            {
-                this.m_Data = value;
-            }
+            get => m_Data;
+            set => m_Data = value;
         }
-        public JSONBool(bool aData)
-        {
-            this.m_Data = aData;
-        }
-        public JSONBool(string aData)
-        {
-            this.Value = aData;
-        }
+        public JSONBool(bool aData) => m_Data = aData;
+        public JSONBool(string aData) => Value = aData;
         internal override void WriteToStringBuilder(StringBuilder aSB, int aIndent, int aIndentInc, JSONTextMode aMode)
         {
-            aSB.Append(this.m_Data ? "true" : "false");
+            aSB.Append(m_Data ? "true" : "false");
         }
-        public override bool Equals(object obj)
-        {
-            return obj != null && obj is bool && this.m_Data == (bool)obj;
-        }
-        public override int GetHashCode()
-        {
-            return this.m_Data.GetHashCode();
-        }
+        public override bool Equals(object obj) => obj is bool v && m_Data == v;
+        public override int GetHashCode() => m_Data.GetHashCode();
         public bool m_Data;
     }
 }

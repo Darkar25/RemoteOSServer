@@ -1,0 +1,20 @@
+{
+    "variants": {
+        "color=white": { "model": "white_stained_glass_pane" },
+        "color=orange": { "model": "orange_stained_glass_pane" },
+        "color=magenta": { "model": "magenta_stained_glass_pane" },
+        "color=light_blue": { "model": "light_blue_stained_glass_pane" },
+        "color=yellow": { "model": "yellow_stained_glass_pane" },
+        "color=lime": { "model": "lime_stained_glass_pane" },
+        "color=pink": { "model": "pink_stained_glass_pane" },
+        "color=gray": { "model": "gray_stained_glass_pane" },
+        "color=silver": { "model": "silver_stained_glass_pane" },
+        "color=cyan": { "model": "cyan_stained_glass_pane" },
+        "color=purple": { "model": "purple_stained_glass_pane" },
+        "color=blue": { "model": "blue_stained_glass_pane" },
+        "color=brown": { "model": "brown_stained_glass_pane" },
+        "color=green": { "model": "green_stained_glass_pane" },
+        "color=red": { "model": "red_stained_glass_pane" },
+        "color=black": { "model": "black_stained_glass_pane" }
+    }
+}

@@ -2,14 +2,16 @@
 using RemoteOS.OpenComputers;
 using RemoteOS.OpenComputers.Data;
 using System.Drawing;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
     //Perhaps add a buffer data caching too?
     [Component("gpu")]
-    public class GraphicsCardComponent : Component
+    public partial class GraphicsCardComponent : Component
     {
         public const int RESERVED_SCREEN = 0;
+
         public GraphicsCardComponent(Machine parent, Guid address) : base(parent, address) { }
 
         List<GPUBuffer> _buffers = new();
@@ -27,17 +29,24 @@ namespace RemoteOS.OpenComputers.Components
         int? _height;
         int? _vwidth;
         int? _vheight;
-        List<Color?> _palette = new();
+        Color?[] _palette = new Color?[16];
+
+        public override async Task<Tier> GetTier()
+        {
+            var d = (await this.GetDeviceInfo()).Width;
+            return d == 1 ? Tier.One : d == 4 ? Tier.Two : Tier.Three; // Hardcoded maximum depth
+        }
 
         /// <param name="index">Palette index</param>
         /// <returns>The palette color at the specified palette index.</returns>
         /// <exception cref="PaletteException">Palette is not available or the index is invalid</exception>
         public async Task<Color> GetPaletteColor(int index)
         {
-            if(await this.GetTier() < Tier.Two) throw new PaletteException("Palette is not available");
+            if(await GetTier() < Tier.Two) throw new PaletteException("Palette is not available");
             if (index < 0 || index >= 16) throw new PaletteException("Invalid palette index");
-            return _palette[index] ??= Color.FromArgb((await Invoke("getPaletteColor", index))[0]);
+            return _palette[index] ??= Color.FromArgb(await InvokeFirst("getPaletteColor", index));
         }
+
         /// <summary>
         /// Set the palette color at the specified palette index.
         /// </summary>
@@ -47,34 +56,39 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="PaletteException">Palette is not available or the index is invalid</exception>
         public async Task<Color> SetPaletteColor(int index, Color color)
         {
-            if (await this.GetTier() < Tier.Two) throw new PaletteException("Palette is not available");
+            if (await GetTier() < Tier.Two) throw new PaletteException("Palette is not available");
             if (index < 0 || index >= 16) throw new PaletteException("Invalid palette index");
             _palette[index] = color;
-            return Color.FromArgb((await Invoke("setPaletteColor", index, color))[0]);
+            return Color.FromArgb(await InvokeFirst("setPaletteColor", index, color));
         }
+
         /// <returns>The currently selected buffer</returns>
         public GPUBuffer GetSelectedBuffer() => _selectedBuffer ??= ScreenBuffer;
-        /// <summary>
-        /// Sets the active buffer
-        /// </summary>
-        /// <param name="buffer">Buffer to select</param>
-        /// <exception cref="InvalidOperationException">The buffer is invalid</exception>
-        public async Task SetSelectedBuffer(GPUBuffer buffer)
+
+		/// <summary>
+		/// Sets the active buffer
+		/// </summary>
+		/// <param name="buffer">Buffer to select</param>
+		/// <exception cref="BufferException">The buffer is invalid</exception>
+		public async Task SetSelectedBuffer(GPUBuffer buffer)
         {
-            if (buffer.Parent != this) throw new InvalidOperationException("The buffer does not belong to this GPU");
-            if (buffer.Handle != RESERVED_SCREEN && !_buffers.Contains(buffer)) throw new InvalidOperationException("Invalid buffer");
+            if (buffer.Parent != this) throw new BufferException("The buffer does not belong to this GPU");
+            if (buffer.Handle != RESERVED_SCREEN && !_buffers.Contains(buffer)) throw new BufferException("Invalid buffer");
             var res = await Invoke("setActiveBuffer", buffer.Handle);
             if(res[1].IsNull)
                 _selectedBuffer = buffer;
         }
+
         /// <returns>An array of the allocated buffers</returns>
         public IEnumerable<GPUBuffer> GetBuffers() => _buffers.AsEnumerable();
+
         /// <inheritdoc cref="AllocateBuffer(int, int)"/>
         public async Task<GPUBuffer> AllocateBuffer()
         {
-            var max = await GetMaxResolution();
-            return await AllocateBuffer(max.Width, max.Height);
+            var (Width, Height) = await GetMaxResolution();
+            return await AllocateBuffer(Width, Height);
         }
+
         /// <summary>
         /// Allocates a new buffer with dimensions width*height (defaults to max resolution) and appends it to the buffer list.
         /// </summary>
@@ -88,11 +102,12 @@ namespace RemoteOS.OpenComputers.Components
             if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Invalid page dimensions: must be greater than zero");
             if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height), "Invalid page dimensions: must be greater than zero");
             if (width * height > await GetFreeMemory()) throw new OutOfMemoryException("Not enough video memory");
-            var id = (await Invoke("allocateBuffer", width, height))[0];
+            var id = await InvokeFirst("allocateBuffer", width, height);
             var buf = new GPUBuffer(this, id, width, height);
             _buffers.Add(buf);
             return buf;
         }
+
         /// <summary>
         /// Closes all buffers and returns the count. If the active buffer is closed, selected buffer moves to screen buffer
         /// </summary>
@@ -101,28 +116,30 @@ namespace RemoteOS.OpenComputers.Components
         {
             _buffers.Clear();
             _selectedBuffer = ScreenBuffer;
-            return (await Invoke("freeAllBuffers"))[0];
+            return await InvokeFirst("freeAllBuffers");
         }
+
         /// <returns>The total memory size of the gpu vram. This does not include the screen.</returns>
         public async Task<int> GetTotalMemory()
         {
 #if ROS_GLOBAL_CACHING
-            if(GlobalCache.vramSizes.TryGetValue(await this.GetTier(), out int vram))
+            if(GlobalCache.vramSizes.TryGetValue(await GetTier(), out int vram))
             {
                 return _totalMemory ??= vram * (await this.GetDeviceInfo()).Capacity;
             } else
             {
                 _totalMemory = (await Invoke("totalMemory"))[0];
-                GlobalCache.vramSizes[await this.GetTier()] = _totalMemory.Value / (await this.GetDeviceInfo()).Capacity;
+                GlobalCache.vramSizes[await GetTier()] = _totalMemory.Value / (await this.GetDeviceInfo()).Capacity;
                 return _totalMemory.Value;
             }
 #else
-            return _totalMemory ??= (await Invoke("totalMemory"))[0];
+            return _totalMemory ??= await InvokeFirst("totalMemory");
 #endif
         }
 
         /// <returns>The total free memory not allocated to buffers. This does not include the screen.</returns>
         public async Task<int> GetFreeMemory() => await GetTotalMemory() - GetBuffers().Sum(x => x.Width * x.Height);
+
         /// <returns>The maximum screen resolution.</returns>
         public async Task<(int Width, int Height)> GetMaxResolution()
         {
@@ -134,6 +151,7 @@ namespace RemoteOS.OpenComputers.Components
             }
             return (_maxWidth.Value, _maxHeight.Value);
         }
+
         /// <summary>
         /// Binds the GPU to the screen with the specified address and resets screen settings if `reset` is true.
         /// </summary>
@@ -142,7 +160,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>true if binding was successful</returns>
         public async Task<bool> Bind(ScreenComponent screen, bool reset = true)
         {
-            bool ret = (await Invoke("bind", screen, reset))[0];
+            bool ret = await InvokeFirst("bind", screen, reset);
             if(ret) {
                 _maxWidth = null;
                 _maxHeight = null;
@@ -153,14 +171,17 @@ namespace RemoteOS.OpenComputers.Components
                     _foreground = Color.White;
                     _depth = await GetMaxDepth();
                     (_width, _height) = await GetMaxResolution();
-                    _screenBuffer = new GPUBuffer(this, RESERVED_SCREEN, _maxWidth.Value, _maxHeight.Value);
+                    _screenBuffer = new GPUBuffer(this, RESERVED_SCREEN, _width.Value, _height.Value);
                     if (GetSelectedBuffer().Handle == RESERVED_SCREEN) _selectedBuffer = _screenBuffer;
                 }
+                _screen = screen;
             }
             return ret;
         }
+
         /// <returns>The screen the GPU is currently bound to.</returns>
-        public async Task<ScreenComponent> GetScreen() => _screen ??= (await Parent.GetComponents()).Get<ScreenComponent>(Guid.Parse((await Invoke("getScreen"))[0]));
+        public async Task<ScreenComponent?> GetScreen() => _screen ??= (await Parent.GetComponents()).Get<ScreenComponent>(Guid.Parse(await InvokeFirst("getScreen")));
+        
         /// <returns>The current background color and whether it's from the palette or not.</returns>
         public async Task<(Color color, int PaletteIndex)> GetBackground()
         {
@@ -170,8 +191,9 @@ namespace RemoteOS.OpenComputers.Components
                     return ((_background = await GetPaletteColor(res[0])).Value, res[0]);
                 return((_background = Color.FromArgb(res[0])).Value, -1);
             }
-            return (_background.Value, _palette.IndexOf(_background));
+            return (_background.Value, Array.IndexOf(_palette, _background));
         }
+        
         /// <summary>
         /// Sets the background color to the specified value. Optionally takes an explicit palette index.
         /// </summary>
@@ -183,6 +205,7 @@ namespace RemoteOS.OpenComputers.Components
             var res = await Invoke("setBackground", background);
             return (Color.FromArgb(res[0]), res[1].IsNull ? -1 : res[1]);
         }
+        
         /// <inheritdoc cref="SetBackground(Color)"/>
         /// <param name="paletteIndex">Palette index</param>
         public async Task<(Color color, int PaletteIndex)> SetBackground(int paletteIndex)
@@ -191,6 +214,7 @@ namespace RemoteOS.OpenComputers.Components
             var res = await Invoke("setBackground", paletteIndex, true);
             return (Color.FromArgb(res[0]), res[1].IsNull ? -1 : res[1]);
         }
+        
         /// <returns>The current foreground color and whether it's from the palette or not.</returns>
         public async Task<(Color color, int PaletteIndex)> GetForeground()
         {
@@ -201,8 +225,9 @@ namespace RemoteOS.OpenComputers.Components
                     return ((_foreground = await GetPaletteColor(res[0])).Value, res[0]);
                 return ((_foreground = Color.FromArgb(res[0])).Value, -1);
             }
-            return (_foreground.Value, _palette.IndexOf(_foreground));
+            return (_foreground.Value, Array.IndexOf(_palette, _foreground));
         }
+        
         /// <summary>
         /// Sets the foreground color to the specified value. Optionally takes an explicit palette index.
         /// </summary>
@@ -214,6 +239,7 @@ namespace RemoteOS.OpenComputers.Components
             var res = await Invoke("setForeground", foreground);
             return (Color.FromArgb(res[0]), res[1].IsNull ? -1 : res[1]);
         }
+        
         /// <inheritdoc cref="SetForeground(Color)"/>
         /// <param name="paletteIndex">Palette index</param>
         public async Task<(Color color, int PaletteIndex)> SetForeground(int paletteIndex)
@@ -222,8 +248,10 @@ namespace RemoteOS.OpenComputers.Components
             var res = await Invoke("setForeground", paletteIndex, true);
             return (Color.FromArgb(res[0]), res[1].IsNull ? -1 : res[1]);
         }
+
         /// <returns>The currently set color depth.</returns>
-        public async Task<int> GetDepth() => _depth ??= (await Invoke("getDepth"))[0];
+        public async Task<int> GetDepth() => _depth ??= await InvokeFirst("getDepth");
+        
         /// <summary>
         /// Set the color depth.
         /// </summary>
@@ -232,12 +260,14 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="ArgumentOutOfRangeException">This depth is not supported</exception>
         public async Task<int> SetDepth(int depth)
         {
-            if (depth != 1 || depth != 4 || depth != 8 || depth > await GetMaxDepth()) throw new ArgumentOutOfRangeException(nameof(depth), "Unsupported depth");
+            if (!(depth == 1 || depth == 4 || depth == 8 || depth <= await GetMaxDepth())) throw new ArgumentOutOfRangeException(nameof(depth), "Unsupported depth");
             _depth = depth;
-            return (await Invoke("setDepth", depth))[0];
+            return await InvokeFirst("setDepth", depth);
         }
+        
         /// <returns>The maximum supported color depth.</returns>
-        public async Task<int> GetMaxDepth() => _maxDepth ??= (await Invoke("maxDepth"))[0];
+        public async Task<int> GetMaxDepth() => _maxDepth ??= await InvokeFirst("maxDepth");
+        
         /// <returns>The current screen resolution.</returns>
         public async Task<(int Width, int Height)> GetResolution()
         {
@@ -249,6 +279,7 @@ namespace RemoteOS.OpenComputers.Components
             }
             return (_width.Value, _height.Value);
         }
+        
         /// <summary>
         /// Set the screen resolution.
         /// </summary>
@@ -258,11 +289,11 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="ArgumentOutOfRangeException">This resolution is not supported</exception>
         public async Task<bool> SetResolution(int width, int height)
         {
-            var max = await GetMaxResolution();
-            if (width < 1 || width > max.Width) throw new ArgumentOutOfRangeException(nameof(width), "Unsupported resolution");
-            if (height < 1 || height > max.Height) throw new ArgumentOutOfRangeException(nameof(height), "Unsupported resolution");
-            if (width * height > max.Width * max.Height) throw new ArgumentOutOfRangeException("Unsupported resolution");
-            var ret = (await Invoke("setResolution", width, height))[0];
+            var (Width, Height) = await GetMaxResolution();
+            if (width < 1 || width > Width) throw new ArgumentOutOfRangeException(nameof(width), "Unsupported resolution");
+            if (height < 1 || height > Height) throw new ArgumentOutOfRangeException(nameof(height), "Unsupported resolution");
+            if (width * height > Width * Height) throw new ArgumentOutOfRangeException("width*height", "Unsupported resolution");
+            var ret = await InvokeFirst("setResolution", width, height);
             if (ret)
             {
                 _width = width;
@@ -270,6 +301,7 @@ namespace RemoteOS.OpenComputers.Components
             }
             return ret;
         }
+        
         /// <returns>The current viewport resolution.</returns>
         public async Task<(int Width, int Height)> GetViewport()
         {
@@ -281,6 +313,7 @@ namespace RemoteOS.OpenComputers.Components
             }
             return (_vwidth.Value, _vheight.Value);
         }
+        
         /// <summary>
         /// Set the viewport resolution. Cannot exceed the screen resolution.
         /// </summary>
@@ -290,11 +323,11 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="ArgumentOutOfRangeException">This resolution is not supported</exception>
         public async Task<bool> SetViewport(int width, int height)
         {
-            var max = await GetMaxResolution();
-            if (width < 1 || width > max.Width) throw new ArgumentOutOfRangeException(nameof(width), "Unsupported resolution");
-            if (height < 1 || height > max.Height) throw new ArgumentOutOfRangeException(nameof(height), "Unsupported resolution");
-            if (width * height > max.Width * max.Height) throw new ArgumentOutOfRangeException("Unsupported resolution");
-            var ret = (await Invoke("setViewport", width, height))[0];
+            var (Width, Height) = await GetMaxResolution();
+            if (width < 1 || width > Width) throw new ArgumentOutOfRangeException(nameof(width), "Unsupported resolution");
+            if (height < 1 || height > Height) throw new ArgumentOutOfRangeException(nameof(height), "Unsupported resolution");
+            if (width * height > Width * Height) throw new ArgumentOutOfRangeException("Unsupported resolution");
+            var ret = await InvokeFirst("setViewport", width, height);
             if (ret)
             {
                 _vwidth = width;
@@ -302,6 +335,7 @@ namespace RemoteOS.OpenComputers.Components
             }
             return ret;
         }
+        
         /// <param name="x">Pixel X coordinate</param>
         /// <param name="y">Pixel Y coordinate</param>
         /// <returns>The value displayed on the screen at the specified index, as well as the foreground and background color. If the foreground or background is from the palette, returns the palette indices</returns>
@@ -310,6 +344,7 @@ namespace RemoteOS.OpenComputers.Components
             var ret = await Invoke("get", x, y);
             return (ret[0], Color.FromArgb(ret[1]), Color.FromArgb(ret[2]), ret[3], ret[4]);
         }
+
         /// <summary>
         /// Plots a string value to the screen at the specified position. Optionally writes the string vertically.
         /// </summary>
@@ -318,7 +353,8 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="value">What to print</param>
         /// <param name="vertical">Print the text vertically</param>
         /// <returns>true if something was printed</returns>
-        public async Task<bool> Set(int x, int y, string value, bool vertical = false) => (await Invoke("set", x, y, value, vertical))[0];
+        public partial Task<bool> Set(int x, int y, string value, bool vertical = false);
+        
         /// <summary>
         /// Copies a portion of the screen from the specified location with the specified size by the specified translation.
         /// </summary>
@@ -334,9 +370,11 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (width < 0) throw new ArgumentOutOfRangeException(nameof(width), "Size cannot be negative");
             if (height < 0) throw new ArgumentOutOfRangeException(nameof(height), "Size cannot be negative");
-            if (tx == 0 && ty == 0) return true;
-            return (await Invoke("copy", x, y, width, height, tx, ty))[0];
+            if (tx == 0 && ty == 0) return true; // Nothing to do
+            if (width == 0 || height == 0) return true; // Nothing to do
+            return await InvokeFirst("copy", x, y, width, height, tx, ty);
         }
+        
         /// <summary>
         /// Fills a portion of the screen at the specified position with the specified size with the specified character.
         /// </summary>
@@ -351,16 +389,18 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (width < 0) throw new ArgumentOutOfRangeException(nameof(width), "Size cannot be negative");
             if (height < 0) throw new ArgumentOutOfRangeException(nameof(height), "Size cannot be negative");
-            return (await Invoke("fill", x, y, width, height, value))[0];
+			if (width == 0 || height == 0) return true; // Nothing to do
+			return await InvokeFirst("fill", x, y, width, height, value);
         }
+
         public GPUBuffer ScreenBuffer
         {
             get
             {
                 if(_screenBuffer == null)
                 {
-                    var max = GetMaxResolution().Result;
-                    _screenBuffer = new GPUBuffer(this, RESERVED_SCREEN, max.Width, max.Height);
+                    var (Width, Height) = GetMaxResolution().Result;
+                    _screenBuffer = new GPUBuffer(this, RESERVED_SCREEN, Width, Height);
                 }
                 return _screenBuffer;
             }
@@ -372,13 +412,17 @@ namespace RemoteOS.OpenComputers.Components
             get => GetDepth().Result;
             set => SetDepth(value);
         }
+
         public int MaxDepth => GetMaxDepth().Result;
+
         public GPUBuffer SelectedBuffer
         {
             get => GetSelectedBuffer();
             set => SetSelectedBuffer(value);
         }
+
         public Color Background => GetBackground().Result.color;
+
         public Color Foreground => GetForeground().Result.color;
 #endif
 
@@ -404,29 +448,33 @@ namespace RemoteOS.OpenComputers.Components
             }
 
             /// <inheritdoc cref="Bitblt(GPUBuffer, int, int, int, int, int, int)"/>
-            public async Task<bool> Bitblt(int column = 1, int row = 1, int fromColumn = 1, int fromRow = 1) => await Bitblt(Parent._buffers.First(), column, row, fromColumn, fromRow);
+            public Task<bool> Bitblt(int column = 1, int row = 1, int fromColumn = 1, int fromRow = 1) => Bitblt(Parent._buffers.First(), column, row, fromColumn, fromRow);
+            
             /// <inheritdoc cref="Bitblt(GPUBuffer, int, int, int, int, int, int)"/>
-            public async Task<bool> Bitblt(int width, int height, int column = 1, int row = 1, int fromColumn = 1, int fromRow = 1) => await Bitblt(Parent._buffers.First(), width, height, column, row, fromColumn, fromRow);
+            public Task<bool> Bitblt(int width, int height, int column = 1, int row = 1, int fromColumn = 1, int fromRow = 1) => Bitblt(Parent._buffers.First(), width, height, column, row, fromColumn, fromRow);
+            
             /// <inheritdoc cref="Bitblt(GPUBuffer, int, int, int, int, int, int)"/>
-            public async Task<bool> Bitblt(GPUBuffer destination, int column = 1, int row = 1, int fromColumn = 1, int fromRow = 1) => await Bitblt(destination, destination.Width, destination.Height, column, row, fromColumn, fromRow);
-            /// <summary>
-            /// bitblt from buffer to screen. All parameters are optional. Writes to `destination` page in rectangle `column, row, width, height`, defaults to the bound screen and its viewport. Reads data from this buffer's page at `fromColumn, fromRow`, default is the active page from position 1, 1
-            /// </summary>
-            /// <param name="destination">Destination buffer</param>
-            /// <param name="width">Width of copied region</param>
-            /// <param name="height">Height of copied region</param>
-            /// <param name="column">The column to copy to</param>
-            /// <param name="row">The row to copy to</param>
-            /// <param name="fromColumn">The column to copy from</param>
-            /// <param name="fromRow">The row to copy from</param>
-            /// <returns>true if copy was successful</returns>
-            /// <exception cref="InvalidOperationException">This buffer is invalid</exception>
-            public async Task<bool> Bitblt(GPUBuffer destination, int width, int height, int column = 1, int row = 1, int fromColumn = 1, int fromRow = 1)
+            public Task<bool> Bitblt(GPUBuffer destination, int column = 1, int row = 1, int fromColumn = 1, int fromRow = 1) => Bitblt(destination, destination.Width, destination.Height, column, row, fromColumn, fromRow);
+
+			/// <summary>
+			/// bitblt from buffer to screen. All parameters are optional. Writes to `destination` page in rectangle `column, row, width, height`, defaults to the bound screen and its viewport. Reads data from this buffer's page at `fromColumn, fromRow`, default is the active page from position 1, 1
+			/// </summary>
+			/// <param name="destination">Destination buffer</param>
+			/// <param name="width">Width of copied region</param>
+			/// <param name="height">Height of copied region</param>
+			/// <param name="column">The column to copy to</param>
+			/// <param name="row">The row to copy to</param>
+			/// <param name="fromColumn">The column to copy from</param>
+			/// <param name="fromRow">The row to copy from</param>
+			/// <returns>true if copy was successful</returns>
+			/// <exception cref="BufferException">This buffer is invalid</exception>
+			public async Task<bool> Bitblt(GPUBuffer destination, int width, int height, int column = 1, int row = 1, int fromColumn = 1, int fromRow = 1)
             {
-                if(destination.Parent != Parent) throw new InvalidOperationException("The buffer does not belong to this GPU");
-                if (!Parent._buffers.Contains(this)) throw new InvalidOperationException("Invalid buffer");
-                return (await Parent.Invoke("bitblt", destination.Handle, column, row, width, height, Handle, fromColumn, fromRow))[0];
+                if(destination.Parent != Parent) throw new BufferException("The buffer does not belong to this GPU");
+                if (!Parent._buffers.Contains(this)) throw new BufferException("Invalid buffer");
+                return await Parent.InvokeFirst("bitblt", destination.Handle, column, row, width, height, Handle, fromColumn, fromRow);
             }
+            
             /// <summary>
             /// Closes this buffer. If the current buffer is closed, selected buffer moves to screen buffer
             /// </summary>
@@ -434,8 +482,8 @@ namespace RemoteOS.OpenComputers.Components
             public async Task<bool> Free()
             {
                 if (Handle == RESERVED_SCREEN) return false; //Can`t free reserved buffer
-                if (Handle != RESERVED_SCREEN && !Parent._buffers.Contains(this)) return false; //Invalid buffer
-                bool ret = (await Parent.Invoke("freeBuffer", Handle))[0];
+                if (!Parent._buffers.Contains(this)) return false; //Invalid buffer
+                bool ret = await Parent.InvokeFirst("freeBuffer", Handle);
                 if (ret)
                 {
                     Parent._buffers.Remove(this);

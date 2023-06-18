@@ -1,0 +1,7 @@
+{
+    "variants": {
+        "prismarine": { "model": "prismarine_rough" },
+        "dark_prismarine": { "model": "prismarine_dark" },
+        "prismarine_bricks": { "model": "prismarine_bricks" },
+    }
+}

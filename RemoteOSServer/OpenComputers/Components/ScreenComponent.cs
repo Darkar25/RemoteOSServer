@@ -1,9 +1,10 @@
 ﻿using RemoteOS.OpenComputers.Data;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
     [Component("screen")]
-    public class ScreenComponent : Component
+    public partial class ScreenComponent : Component
     {
         /// <summary>
         /// This event is sent when screen changes size
@@ -90,48 +91,61 @@ namespace RemoteOS.OpenComputers.Components
             });
         }
 
+        public override async Task<Tier> GetTier()
+        {
+            var d = (await this.GetDeviceInfo()).Width;
+            return d == 1 ? Tier.One : d == 4 ? Tier.Two : Tier.Three; // Hardcoded maximum depth
+        }
+
         /// <returns>The aspect ratio of the screen. For multi-block screens this is the number of blocks, horizontal and vertical.</returns>
         public async Task<(int Width, int Height)> GetAspectRatio()
         {
             var res = await Invoke("getAspectRatio");
             return (res[0], res[1]);
         }
+
         /// <returns>Whether the screen is currently on.</returns>
-        public async Task<bool> IsOn() => (await Invoke("isOn"))[0];
-        /// <summary>
-        /// Turns the screen on.
-        /// </summary>
-        /// <returns>true if it was off.</returns>
-        public async Task<bool> TurnOn() => (await Invoke("turnOn"))[0];
+        public partial Task<bool> IsOn();
+
+		/// <summary>
+		/// Turns the screen on.
+		/// </summary>
+		/// <returns>true if it was off.</returns>
+		public partial Task<bool> TurnOn();
+
         /// <summary>
         /// Turns off the screen.
         /// </summary>
         /// <returns>true if it was on.</returns>
-        public async Task<bool> TurnOff() => (await Invoke("turnOff"))[0];
+        public partial Task<bool> TurnOff();
+
         /// <returns>The list of keyboards attached to the screen.</returns>
         public async Task<IEnumerable<KeyboardComponent>> GetKeyboards()
         {
             var comps = await Parent.GetComponents();
             return (await Invoke("getKeyboards")).Linq.Select(x => comps.Get<KeyboardComponent>(Guid.Parse(x.Value.Value))).Where(x => x is not null);
         }
+
         /// <returns>Whether the screen is in high precision mode (sub-pixel mouse event positions).</returns>
-        public async Task<bool> IsPrecise() => (await Invoke("isPrecise"))[0];
+        public partial Task<bool> IsPrecise();
+
         /// <param name="precise">Set whether to use high precision mode (sub-pixel mouse event positions).</param>
         /// <returns>The old value</returns>
         public async Task<bool> SetPrecise(bool precise)
         {
-            if (await this.GetTier() < Tier.Three) throw new NotSupportedException("Precise mode is not supported on this screen");
-            return (await Invoke("setPrecise", precise))[0];
+            if (await GetTier() < Tier.Three) throw new NotSupportedException("Precise mode is not supported on this screen");
+            return await InvokeFirst("setPrecise", precise);
         }
 
         /// <returns>Whether touch mode is inverted (sneak-activate opens GUI, instead of normal activate).</returns>
-        public async Task<bool> IsTouchModeInverted() => (await Invoke("isTouchModeInverted"))[0];
+        public partial Task<bool> IsTouchModeInverted();
+
         /// <summary>
         /// Sets whether to invert touch mode (sneak-activate opens GUI, instead of normal activate).
         /// </summary>
         /// <param name="inverted">Touch mode</param>
         /// <returns>The old value</returns>
-        public async Task<bool> SetTouchModeInverted(bool inverted) => (await Invoke("setTouchModeInverted", inverted))[0];
+        public partial Task<bool> SetTouchModeInverted(bool inverted);
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public bool IsScreenOn

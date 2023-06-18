@@ -1,0 +1,8 @@
+{
+    "variants": {
+        "oak": { "model": "oak_leaves" },
+        "spruce": { "model": "spruce_leaves" },
+        "birch": { "model": "birch_leaves" },
+        "jungle": { "model": "jungle_leaves" }
+    }
+}

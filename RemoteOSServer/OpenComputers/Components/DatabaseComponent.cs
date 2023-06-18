@@ -1,11 +1,12 @@
 ﻿using RemoteOS.OpenComputers.Data;
 using RemoteOS.OpenComputers.Exceptions;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
     [Obsolete("Store and compare stack data on the server, not on the remote machine.")]
     [Component("database")]
-    public class DatabaseComponent : Component
+    public partial class DatabaseComponent : Component
     {
         public DatabaseComponent(Machine parent, Guid address) : base(parent, address)
         {
@@ -19,8 +20,9 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<ItemStackInfo> Get(int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return new ItemStackInfo((await Invoke("get", slot))[0]);
+            return ItemStackInfo.FromJson(await InvokeFirst("get", slot));
         }
+
         /// <summary>
         /// Computes a hash value for the item stack in the specified slot.
         /// </summary>
@@ -30,14 +32,16 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<string> ComputeHash(int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("computeHash", slot))[0];
+            return await InvokeFirst("computeHash", slot);
         }
+
         /// <summary>
         /// Get the index of an item stack with the specified hash.
         /// </summary>
         /// <param name="hash">Hash of an item</param>
         /// <returns>The index of an item, a negative value if no such stack was found.</returns>
-        public async Task<int> IndexOf(string hash) => (await Invoke("indexOf", hash))[0];
+        public partial Task<int> IndexOf(string hash);
+
         /// <summary>
         /// Clears the specified slot.
         /// </summary>
@@ -47,8 +51,9 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CLear(int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("clear", slot))[0];
+            return await InvokeFirst("clear", slot);
         }
+
         /// <summary>
         /// Copies an entry to another slot.
         /// </summary>
@@ -59,8 +64,9 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (from <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
             if (to <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("copy", from, to))[0];
+            return await InvokeFirst("copy", from, to);
         }
+
         /// <summary>
         /// Copies an entry to another slot to another database.
         /// </summary>
@@ -72,13 +78,19 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (from <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
             if (to <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("copy", from, to, database))[0];
+            return await InvokeFirst("copy", from, to, database);
         }
+
         /// <summary>
         /// Copies the data stored in this database to another database.
         /// </summary>
         /// <param name="database">Destination database</param>
         /// <returns>How many entries were copied</returns>
-        public async Task<int> Clone(DatabaseComponent database) => (await Invoke("clone", database))[0];
+        public partial Task<int> Clone(DatabaseComponent database);
+
+        public override async Task<Tier> GetTier() {
+            var s = (await this.GetDeviceInfo()).Capacity;
+            return s == 9 ? Tier.One : s == 25 ? Tier.Two : Tier.Three;
+        }
     }
 }

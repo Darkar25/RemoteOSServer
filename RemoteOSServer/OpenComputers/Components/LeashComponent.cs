@@ -1,7 +1,11 @@
-﻿namespace RemoteOS.OpenComputers.Components
+﻿using RemoteOS.OpenComputers.Data;
+using RemoteOS.Helpers;
+
+namespace RemoteOS.OpenComputers.Components
 {
     [Component("leash")]
-    public class LeashComponent : Component
+    [Tier(Tier.One)]
+    public partial class LeashComponent : Component
     {
         public LeashComponent(Machine parent, Guid address) : base(parent, address)
         {
@@ -12,10 +16,11 @@
         /// </summary>
         /// <param name="side">The side to leash from</param>
         /// <returns>true if entity was leashed</returns>
-        public async Task<bool> Leash(Sides side) => (await Invoke("leash", side))[0];
+        public partial Task<bool> Leash(Sides side);
+
         /// <summary>
         /// Unleashes all currently leashed entities.
         /// </summary>
-        public async Task Unleash() => await Invoke("unleash");
+        public partial Task Unleash();
     }
 }

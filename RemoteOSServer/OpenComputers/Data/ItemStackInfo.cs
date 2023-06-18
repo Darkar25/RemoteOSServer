@@ -1,4 +1,5 @@
 ﻿using EasyJSON;
+using System.Drawing;
 
 namespace RemoteOS.OpenComputers.Data
 {
@@ -14,27 +15,32 @@ namespace RemoteOS.OpenComputers.Data
         public string? ModName;
         public string Label;
         public bool HasTag;
-        public ItemStackInfo(JSONNode data)
-        {
-            int Damage = data["damage"];
-            MaxDurability = data["maxDamage"];
-            if (MaxDurability == 0)
+
+        public static ItemStackInfo FromJson(JSONNode json) {
+            var ret = new ItemStackInfo()
             {
-                Meta = Damage;
-                Durability = 0;
-            } else
+                Count = json["size"],
+                StackSize = json["maxSize"],
+                Id = json["id"],
+                Label = json["label"],
+                HasTag = json["hasTag"],
+                MaxDurability = json["maxDamage"]
+            };
+            int Damage = json["damage"];
+            if (ret.MaxDurability == 0)
             {
-                Meta = 0;
-                Durability = MaxDurability - Damage;
+                ret.Meta = Damage;
+                ret.Durability = 0;
             }
-            Count = data["size"];
-            StackSize = data["maxSize"];
-            Id = data["id"];
-            var n = data["name"].Value.Split(":");
-            ModName = n.FirstOrDefault();
-            Name = n.LastOrDefault();
-            Label = data["label"];
-            HasTag = data["hasTag"];
+            else
+            {
+                ret.Meta = 0;
+                ret.Durability = ret.MaxDurability - Damage;
+            }
+            var n = json["name"].Value.Split(":");
+            ret.ModName = n.FirstOrDefault();
+            ret.Name = n.LastOrDefault();
+            return ret;
         }
     }
 }

@@ -1,10 +1,14 @@
-﻿using RemoteOS.OpenComputers.Data;
+﻿using OneOf;
+using OneOf.Types;
+using RemoteOS.OpenComputers.Data;
 using RemoteOS.OpenComputers.Exceptions;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
     [Component("inventory_controller")]
-    public class InventoryContollerComponent : Component
+    [Tier(Tier.Two)]
+    public partial class InventoryContollerComponent : Component
     {
         public InventoryContollerComponent(Machine parent, Guid address) : base(parent, address)
         {
@@ -15,9 +19,10 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="InvalidSideException">This side is not supported</exception>
         public async Task<int> GetInventorySize(Sides side)
         {
-            if (side != Sides.Front || side != Sides.Top || side != Sides.Bottom) throw new InvalidSideException("Valid sides are Front, Top, Bottom");
-            return (await Invoke("getInventorySize", side))[0];
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
+            return await InvokeFirst("getInventorySize", side);
         }
+
         /// <param name="side">The side that has the container</param>
         /// <param name="slot">The slot to analyze</param>
         /// <returns>A description of the stack in the inventory on the specified side of the device.</returns>
@@ -25,30 +30,34 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="InventoryException">This slot does not exist</exception>
         public async Task<ItemStackInfo> GetStackInSlot(Sides side, int slot)
         {
-            if (side != Sides.Front || side != Sides.Top || side != Sides.Bottom) throw new InvalidSideException("Valid sides are Front, Top, Bottom");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            var res = (await Invoke("getStackInSlot", side, slot))[0];
-            return new(res);
+            var res = await InvokeFirst("getStackInSlot", side, slot);
+            return ItemStackInfo.FromJson(res);
         }
+
         /// <param name="slot">Which slot to get</param>
         /// <returns>A description of the stack in the specified slot.</returns>
         /// <exception cref="InventoryException">This slot does not exist</exception>
         public async Task<ItemStackInfo> GetStackInInternalSlot(int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            var res = (await Invoke("getStackInInternalSlot", slot))[0];
-            return new(res);
+            var res = await InvokeFirst("getStackInInternalSlot", slot);
+            return ItemStackInfo.FromJson(res);
         }
+
         /// <param name="slot">Which slot to get</param>
         /// <returns>A description of the stack in the selected slot.</returns>
         /// <exception cref="InventoryException">This slot does not exist</exception>
         public async Task<ItemStackInfo> GetStackInInternalSlot()
         {
-            var res = (await Invoke("getStackInInternalSlot"))[0];
-            return new(res);
+            var res = await InvokeFirst("getStackInInternalSlot");
+            return ItemStackInfo.FromJson(res);
         }
+
         /// <inheritdoc cref="DropIntoSlot(Sides, int, int, Sides)"/>
-        public async Task<(bool Success, string Reason)> DropIntoSlot(Sides side, int slot, int count = 64) => await DropIntoSlot(side, slot, count, side);
+        public async Task<ReasonOr<Success>> DropIntoSlot(Sides side, int slot, int count = 64) => await DropIntoSlot(side, slot, count, side);
+
         /// <summary>
         /// Drops the selected item stack into the specified slot of an inventory.
         /// </summary>
@@ -59,15 +68,18 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Whether the items were dropped successfully, and if they were not the reason why</returns>
         /// <exception cref="InvalidSideException">Cannot drop from that side</exception>
         /// <exception cref="InventoryException">This slot does not exist</exception>
-        public async Task<(bool Success, string Reason)> DropIntoSlot(Sides face, int slot, int count, Sides side)
+        public async Task<ReasonOr<Success>> DropIntoSlot(Sides face, int slot, int count, Sides side)
         {
-            if (side != Sides.Front || side != Sides.Top || side != Sides.Bottom) throw new InvalidSideException("Valid sides are Front, Top, Bottom");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
             var res = await Invoke("dropIntoSlot", face, slot, count, side);
-            return (res[0], res[1]);
+            if (!res[0]) return new Reason(res[1].Value);
+            return new Success();
         }
+
         /// <inheritdoc cref="SuckFromSlot(Sides, int, int, Sides)"/>
-        public async Task<(bool Success, string Reason)> SuckFromSlot(Sides side, int slot, int count = 64) => await SuckFromSlot(side, slot, count, side);
+        public async Task<ReasonOr<Success>> SuckFromSlot(Sides side, int slot, int count = 64) => await SuckFromSlot(side, slot, count, side);
+
         /// <summary>
         /// Sucks items from the specified slot of an inventory.
         /// </summary>
@@ -78,18 +90,21 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Whether the items were sucked successfully, and if they were not the reason why</returns>
         /// <exception cref="InvalidSideException">Cannot suck from that side</exception>
         /// <exception cref="InventoryException">This slot does not exist</exception>
-        public async Task<(bool Success, string Reason)> SuckFromSlot(Sides face, int slot, int count, Sides side)
+        public async Task<ReasonOr<Success>> SuckFromSlot(Sides face, int slot, int count, Sides side)
         {
-            if (side != Sides.Front || side != Sides.Top || side != Sides.Bottom) throw new InvalidSideException("Valid sides are Front, Top, Bottom");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
             var res = await Invoke("suckFromSlot", face, slot, count, side);
-            return (res[0], res[1]);
-        }
+			if (!res[0]) return new Reason(res[1].Value);
+			return new Success();
+		}
+
         /// <summary>
         /// Swaps the equipped tool with the content of the currently selected inventory slot.
         /// </summary>
         /// <returns>true if items were swapped</returns>
-        public async Task<bool> Equip() => (await Invoke("equip"))[0];
+        public partial Task<bool> Equip();
+
         /// <summary>
         /// Store an item stack description in the specified slot of the database
         /// </summary>
@@ -102,8 +117,9 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> Store(Sides side, int slot, DatabaseComponent database, int dbSlot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("store", side, slot, database, dbSlot))[0];
+            return await InvokeFirst("store", side, slot, database, dbSlot);
         }
+
         /// <summary>
         /// Store an item stack description in the specified slot of the database
         /// </summary>
@@ -115,8 +131,9 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> StoreInternal(int slot, DatabaseComponent database, int dbSlot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("storeInternal", slot, database, dbSlot))[0];
+            return await InvokeFirst("storeInternal", slot, database, dbSlot);
         }
+
         /// <summary>
         /// Compare an item in the specified slot with one in the database with the specified address.
         /// </summary>
@@ -129,8 +146,9 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CompareToDatabase(int slot, DatabaseComponent database, int dbSlot, bool checkNBT = false)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("compareToDatabase", slot, database, dbSlot, checkNBT))[0];
+            return await InvokeFirst("compareToDatabase", slot, database, dbSlot, checkNBT);
         }
+
         /// <param name="side">The side that has the inventory</param>
         /// <param name="slotA">Slot of the first item</param>
         /// <param name="slotB">Slot of the second item</param>
@@ -140,8 +158,9 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CompareStacks(Sides side, int slotA, int slotB, bool checkNBT = false)
         {
             if (slotA <= 0 || slotB <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("compareStacks", side, slotA, slotB, checkNBT))[0];
+            return await InvokeFirst("compareStacks", side, slotA, slotB, checkNBT);
         }
+
         /// <param name="side">The side that has the container</param>
         /// <param name="slot">The slot to analyze</param>
         /// <returns>The maximum number of items in the specified slot of the inventory on the specified side of the device.</returns>
@@ -149,8 +168,9 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> GetSlotMaxStackSize(Sides side, int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("getSlotMaxStackSize", side, slot))[0];
+            return await InvokeFirst("getSlotMaxStackSize", side, slot);
         }
+
         /// <param name="side">The side that has the container</param>
         /// <param name="slot">The slot to analyze</param>
         /// <returns>Number of items in the specified slot of the inventory on the specified side of the device.</returns>
@@ -158,16 +178,18 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> GetSlotStackSize(Sides side, int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("getSlotStackSize", side, slot))[0];
+            return await InvokeFirst("getSlotStackSize", side, slot);
         }
+
         /// <param name="slot">Which slot to compare</param>
         /// <returns>Whether the stack in the selected slot is equivalent to the item in the specified slot (have shared OreDictionary IDs).</returns>
         /// <exception cref="InventoryException">This slot does not exist</exception>
         public async Task<bool> IsEquivalentTo(int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("isEquivalentTo", slot))[0];
+            return await InvokeFirst("isEquivalentTo", slot);
         }
+
         /// <param name="side"></param>
         /// <param name="slotA"></param>
         /// <param name="slotB"></param>
@@ -176,18 +198,19 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="InventoryException">This slot does not exist</exception>
         public async Task<bool> AreStacksEquivalent(Sides side, int slotA, int slotB)
         {
-            if (side != Sides.Front || side != Sides.Top || side != Sides.Bottom) throw new InvalidSideException("Valid sides are Front, Top, Bottom");
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             if (slotA <= 0 || slotB <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return (await Invoke("areStacksEquivalent", side, slotA, slotB))[0];
+            return await InvokeFirst("areStacksEquivalent", side, slotA, slotB);
         }
+
         /// <param name="side">The side to analyze</param>
         /// <returns>The the name of the inventory on the specified side of the device.</returns>
         /// <exception cref="InvalidSideException">This side is not supported</exception>
         /// <exception cref="InventoryException">This slot does not exist</exception>
         public async Task<string> GetInventoryName(Sides side)
         {
-            if (side != Sides.Front || side != Sides.Top || side != Sides.Bottom) throw new InvalidSideException("Valid sides are Front, Top, Bottom");
-            return (await Invoke("getInventoryName", side))[0];
+            side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
+            return await InvokeFirst("getInventoryName", side);
         }
     }
 }

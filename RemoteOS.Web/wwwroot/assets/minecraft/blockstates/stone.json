@@ -1,0 +1,16 @@
+{
+    "variants": {
+        "stone": [
+            { "model": "stone" },
+            { "model": "stone_mirrored" },
+            { "model": "stone", "y": 180 },
+            { "model": "stone_mirrored", "y": 180 }
+        ],
+		"granite": { "model": "granite" },
+		"smooth_granite": { "model": "granite_smooth" },
+		"diorite": { "model": "diorite" },
+		"smooth_diorite": { "model": "diorite_smooth" },
+		"andesite": { "model": "andesite" },
+		"smooth_andesite": { "model": "andesite_smooth" }
+    }
+}

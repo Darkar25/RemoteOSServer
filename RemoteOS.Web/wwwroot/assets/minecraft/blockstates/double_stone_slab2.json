@@ -1,0 +1,6 @@
+{
+    "variants": {
+        "red_sandstone,seamless=false": { "model": "red_sandstone_normal" },
+        "red_sandstone,seamless=true": { "model": "red_sandstone_all" }
+    }
+}

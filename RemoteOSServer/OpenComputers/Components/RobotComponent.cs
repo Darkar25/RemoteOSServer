@@ -1,10 +1,14 @@
-﻿using RemoteOS.OpenComputers.Exceptions;
+﻿using OneOf;
+using OneOf.Types;
+using RemoteOS.OpenComputers.Exceptions;
 using System.Drawing;
+using RemoteOS.Helpers;
+using RemoteOS.OpenComputers.Data;
 
 namespace RemoteOS.OpenComputers.Components
 {
     [Component("robot")]
-    public class RobotComponent : Agent
+    public partial class RobotComponent : Agent
     {
         public RobotComponent(Machine parent, Guid address) : base(parent, address) { }
 
@@ -14,20 +18,23 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="direction">Direction for movement</param>
         /// <returns>Whether the movement was successful, and the reason why if it wasnt</returns>
         /// <exception cref="InvalidSideException">This side if not supported</exception>
-        public async Task<(bool Success, string Reason)> Move(Sides direction)
+        public async Task<ReasonOr<Success>> Move(Sides direction)
         {
-            if ((int)direction > 3) throw new InvalidSideException("Direction can be only Bottom, Top, Back, Front");
+            direction.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom, Sides.Back);
             var cmd = await Invoke("move", direction);
-            return (cmd[0], cmd[1]);
+            if (!cmd[0]) return new Reason(cmd[1].Value);
+            return new Success();
         }
+
         /// <summary>
         /// Rotate in the specified direction.
         /// </summary>
         /// <param name="clockwise">Turn clockwise</param>
         /// <returns>true if rotated successfully</returns>
-        public async Task<bool> Turn(bool clockwise) => (await Invoke("turn", clockwise))[0];
+        public partial Task<bool> Turn(bool clockwise);
+
         /// <returns>The durability of the currently equipped tool.</returns>
-        public async Task<float> GetDurability() => (await Invoke("durability"))[0] ?? 0f;
+        public async Task<float> GetDurability() => await InvokeFirst("durability");
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public float Durabitliy => GetDurability().Result;
 #endif

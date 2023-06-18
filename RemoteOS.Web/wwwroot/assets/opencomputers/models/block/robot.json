@@ -1,0 +1,30 @@
+{
+	"textures": {
+		"particle": "opencomputers:model/robot",
+		"robot": "opencomputers:model/robot"
+	},
+	"elements": [
+		{
+			"from": [ 1, 8, 1 ],
+			"to": [ 15, 18, 11 ],
+			"rotation": { "origin": [ 1, 8, 1 ], "axis": "x", "angle": 45 },
+			"faces": {
+				"down": { "uv": [ 8, 4, 16, 8 ], "texture": "#robot" },
+				"up": { "uv": [ 0, 4, 8, 0 ], "texture": "#robot" },
+				"north": { "uv": [ 0, 4, 8, 8 ], "texture": "#robot" },
+				"south": { "uv": [ 8, 0, 16, 4 ], "texture": "#robot" }
+			}
+		},
+		{
+			"from": [ 1, 8, 1 ],
+			"to": [ 11, 18, 15 ],
+			"rotation": { "origin": [ 1, 8, 1 ], "axis": "z", "angle": -45 },
+			"faces": {
+				"down": { "uv": [ 12, 16, 8, 8 ], "texture": "#robot", "rotation": 180 },
+				"up": { "uv": [ 4, 8, 0, 16 ], "texture": "#robot" },
+				"west": { "uv": [ 4, 8, 8, 16 ], "texture": "#robot", "rotation": 90 },
+				"east": { "uv": [ 12, 8, 16, 16 ], "texture": "#robot", "rotation": 270 }
+			}
+		}
+	]
+}

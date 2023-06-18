@@ -1,19 +1,22 @@
-﻿namespace RemoteOS.OpenComputers.Components
+﻿using RemoteOS.Helpers;
+
+namespace RemoteOS.OpenComputers.Components
 {
     [Component("waypoint")]
-    public class WaypointComponent : Component
+    public partial class WaypointComponent : Component
     {
         public WaypointComponent(Machine parent, Guid address) : base(parent, address)
         {
         }
 
         /// <returns>The current label of this waypoint.</returns>
-        public async Task<string> GetLabel() => (await Invoke("getLabel"))[0];
+        public partial Task<string> GetLabel();
+
         /// <summary>
         /// Set the label for this waypoint.
         /// </summary>
         /// <param name="label">New label</param>
-        public async Task SetLabel(string label) => await Invoke("setLabel", label);
+        public partial Task SetLabel(string label);
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public string Label

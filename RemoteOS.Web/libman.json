@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "provider": "unpkg",
+      "library": "@microsoft/signalr@6.0.7",
+      "destination": "wwwroot/js/signalr/",
+      "files": [
+        "dist/browser/signalr.js",
+        "dist/browser/signalr.min.js",
+        "dist/browser/signalr.js.map",
+        "dist/browser/signalr.min.js.map"
+      ]
+    },
+    {
+      "provider": "cdnjs",
+      "library": "lodash.js@4.17.21",
+      "destination": "wwwroot/lib/lodash.js/"
+    },
+    {
+      "provider": "unpkg",
+      "library": "three@0.143.0",
+      "destination": "wwwroot/lib/three/",
+      "files": [
+        "build/three.cjs",
+        "build/three.js",
+        "build/three.min.js",
+        "build/three.module.js",
+        "README.md",
+        "package.json",
+        "LICENSE"
+      ]
+    }
+  ]
+}

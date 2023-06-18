@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "oak": { "model": "oak_planks" },
+        "spruce": { "model": "spruce_planks" },
+        "birch": { "model": "birch_planks" },
+        "jungle": { "model": "jungle_planks" },
+        "acacia": { "model": "acacia_planks" },
+        "dark_oak": { "model": "dark_oak_planks" }
+    }
+}

@@ -1,16 +1,18 @@
 ﻿using RemoteOS.OpenComputers;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
     [Obsolete("Store all data on the server, not on the remote machine.")]
     [Component("eeprom")]
-    public class EEPROMComponent : Component
+    public partial class EEPROMComponent : Component
     {
         string? _bytes;
         string? _label;
         int? _size;
         int? _dataSize;
         string? _data;
+
         public EEPROMComponent(Machine parent, Guid address) : base(parent, address)
         {
         }
@@ -20,9 +22,11 @@ namespace RemoteOS.OpenComputers.Components
         /// </summary>
         /// <param name="checksum"></param>
         /// <returns></returns>
-        public async Task<bool> MakeReadonly(string checksum) => (await Invoke("makeReadonly", checksum))[0];
+        public partial Task<bool> MakeReadonly(string checksum);
+
         /// <returns>The currently stored byte array.</returns>
-        public async Task<string> Get() => _bytes ??= (await Invoke("get"))[0];
+        public async Task<string> Get() => _bytes ??= await InvokeFirst("get");
+
         /// <summary>
         /// Overwrite the currently stored byte array.
         /// </summary>
@@ -34,8 +38,10 @@ namespace RemoteOS.OpenComputers.Components
             if((await Invoke("set", bytes))[1].IsNull)
                 _bytes = bytes;
         }
+
         /// <returns>The label of the EEPROM.</returns>
-        public async Task<string> GetLabel() => _label ??= (await Invoke("getLabel"))[0];
+        public async Task<string> GetLabel() => _label ??= await InvokeFirst("getLabel");
+
         /// <summary>
         /// Set the label of the EEPROM.
         /// </summary>
@@ -46,20 +52,24 @@ namespace RemoteOS.OpenComputers.Components
             if (res[1].IsNull)
                 _label = res[0];
         }
+
         /// <returns>The storage capacity of this EEPROM.</returns>
         public async Task<int> GetSize() => _size ??=
 #if ROS_GLOBAL_CACHING
             GlobalCache.eepromSize ??=
 #endif
-            (await Invoke("getSize"))[0];
+            await InvokeFirst("getSize");
+
         /// <returns>The storage capacity of this EEPROM.</returns>
         public async Task<int> GetDataSize() => _dataSize ??=
 #if ROS_GLOBAL_CACHING
             GlobalCache.eepromDataSize ??=
 #endif
-            (await Invoke("getDataSize"))[0];
+            await InvokeFirst("getDataSize");
+
         /// <returns>The currently stored byte array.</returns>
-        public async Task<string> GetData() => _data ??= (await Invoke("getData"))[0];
+        public async Task<string> GetData() => _data ??= await InvokeFirst("getData");
+
         /// <summary>
         /// Overwrite the currently stored byte array.
         /// </summary>
@@ -71,8 +81,9 @@ namespace RemoteOS.OpenComputers.Components
             if ((await Invoke("setData", data))[1].IsNull)
                 _data = data;
         }
+
         /// <returns>The checksum of the data on this EEPROM.</returns>
-        public async Task<string> GetChecksum() => (await Invoke("getChecksum"))[0];
+        public partial Task<string> GetChecksum();
 
 #if ROS_PROPERTIES
         public string Bytes
@@ -80,13 +91,17 @@ namespace RemoteOS.OpenComputers.Components
             get => Get().Result;
             set => Set(value);
         }
+
         public string Label
         {
             get => GetLabel().Result;
             set => SetLabel(value);
         }
+
         public int Size => GetSize().Result;
+
         public int DataSize => GetDataSize().Result;
+
         public string Data
         {
             get => GetData().Result;

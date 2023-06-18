@@ -1,19 +1,24 @@
-﻿namespace RemoteOS.OpenComputers.Components
+﻿using RemoteOS.OpenComputers.Data;
+using RemoteOS.Helpers;
+
+namespace RemoteOS.OpenComputers.Components
 {
     [Component("sign")]
-    public class SignComponent : Component
+    [Tier(Tier.One)]
+    public partial class SignComponent : Component
     {
         public SignComponent(Machine parent, Guid address) : base(parent, address)
         {
         }
 
         /// <returns>The text on the sign in front of the host.</returns>
-        public async Task<string> GetValue() => (await Invoke("getValue"))[0];
+        public partial Task<string> GetValue();
+
         /// <summary>
         /// Set the text on the sign in front of the host.
         /// </summary>
         /// <param name="value">New value</param>
-        public async Task SetValue(string value) => await Invoke("setValue", value);
+        public partial Task SetValue(string value);
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public string Value

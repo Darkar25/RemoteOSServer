@@ -1,0 +1,6 @@
+{
+    "variants": {
+        "red_sandstone,half=bottom": { "model": "half_slab_red_sandstone" },
+        "red_sandstone,half=top": { "model": "upper_slab_red_sandstone" }
+    }
+}

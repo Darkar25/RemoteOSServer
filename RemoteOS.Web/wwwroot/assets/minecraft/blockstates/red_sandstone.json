@@ -1,0 +1,7 @@
+{
+    "variants": {
+        "type=red_sandstone": { "model": "red_sandstone_normal" }
+        "type=chiseled_red_sandstone": { "model": "red_sandstone_chiseled" }
+        "type=smooth_red_sandstone": { "model": "red_sandstone_smooth" }
+    }
+}

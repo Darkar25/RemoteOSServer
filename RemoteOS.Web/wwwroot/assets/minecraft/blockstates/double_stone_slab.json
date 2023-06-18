@@ -1,0 +1,14 @@
+{
+    "variants": {
+        "stone,seamless=false": { "model": "double_stone" },
+        "stone,seamless=true": { "model": "double_stone_top" },
+		"stone_brick": { "model": "stonebrick_normal" },
+		"cobblestone": { "model": "cobblestone" },
+		"sandstone,seamless=false": { "model": "sandstone_normal" },
+        "sandstone,seamless=true": { "model": "sandstone_all" },
+		"brick": { "model": "brick" },
+		"nether_brick": { "model": "nether_brick" },
+		"quartz,seamless=false": { "model": "quartz_normal" },
+        "quartz,seamless=true":    { "model": "quartz_top" }
+    }
+}

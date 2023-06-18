@@ -1,0 +1,20 @@
+{
+    "variants": {
+        "oak,axis=y":  { "model": "oak_log" },
+        "oak,axis=z":   { "model": "oak_log", "x": 90 },
+        "oak,axis=x":   { "model": "oak_log", "x": 90, "y": 90 },
+        "oak,axis=none": { "model": "oak_bark" },
+		"spruce,axis=y":  { "model": "spruce_log" },
+        "spruce,axis=z":   { "model": "spruce_log", "x": 90 },
+        "spruce,axis=x":   { "model": "spruce_log", "x": 90, "y": 90 },
+        "spruce,axis=none": { "model": "spruce_bark" },
+		"birch,axis=y":  { "model": "birch_log" },
+        "birch,axis=z":   { "model": "birch_log", "x": 90 },
+        "birch,axis=x":   { "model": "birch_log", "x": 90, "y": 90 },
+        "birch,axis=none": { "model": "birch_bark" },
+		"jungle,axis=y":  { "model": "jungle_log" },
+        "jungle,axis=z":   { "model": "jungle_log", "x": 90 },
+        "jungle,axis=x":   { "model": "jungle_log", "x": 90, "y": 90 },
+        "jungle,axis=none": { "model": "jungle_bark" }
+    }
+}

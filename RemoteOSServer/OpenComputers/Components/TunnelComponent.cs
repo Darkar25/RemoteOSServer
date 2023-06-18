@@ -1,14 +1,18 @@
 ﻿using EasyJSON;
 using RemoteOS.OpenComputers;
+using RemoteOS.OpenComputers.Data;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
     [Component("tunnel")]
-    public class TunnelComponent : Component
+    [Tier(Tier.Three)]
+    public partial class TunnelComponent : Component
     {
         public TunnelComponent(Machine parent, Guid address) : base(parent, address)
         {
         }
+
         int? _maxPacketSize;
         string? _channel;
         string? _wakeMessage;
@@ -18,7 +22,8 @@ namespace RemoteOS.OpenComputers.Components
         /// Sends the specified data to the card this one is linked to.
         /// </summary>
         /// <param name="args">The data to send</param>
-        public async Task Send(params JSONNode[] args) => await Invoke("send", args);
+        public partial Task Send(params JSONNode[] args);
+
         /// <returns>The current wake-up message.</returns>
         public async Task<(string Message, bool Fuzzy)> GetWakeMessage()
         {
@@ -30,25 +35,28 @@ namespace RemoteOS.OpenComputers.Components
             }
             return (_wakeMessage, _wakeFuzzy.Value);
         }
+
         /// <summary>
         /// Set the wake-up message and whether to ignore additional data/parameters.
         /// </summary>
         /// <param name="message">Wake message</param>
         /// <param name="fuzzy">Ignore data</param>
-        public async Task SetWakeMessage(string message, bool fuzzy = false)
+        public Task SetWakeMessage(string message, bool fuzzy = false)
         {
             _wakeMessage = message;
             _wakeFuzzy = fuzzy;
-            await Invoke("setWakeMessage", _wakeMessage, _wakeFuzzy);
+            return Invoke("setWakeMessage", _wakeMessage, _wakeFuzzy);
         }
+
         /// <returns>The maximum packet size (config setting).</returns>
         public async Task<int> GetMaxPacketSize() => _maxPacketSize ??=
 #if ROS_GLOBAL_CACHING
             GlobalCache.maxNetworkPacketSize ??= 
 #endif
-            (await Invoke("maxPacketSize"))[0];
+            await InvokeFirst("maxPacketSize");
+
         /// <returns>This link card's shared channel address</returns>
-        public async Task<string> GetChannel() => _channel ??= (await Invoke("getChannel"))[0];
+        public async Task<string> GetChannel() => _channel ??= await InvokeFirst("getChannel");
 
 #if ROS_PROPERTIES
         public (string Message, bool Fuzzy) WakeMessage
@@ -56,7 +64,9 @@ namespace RemoteOS.OpenComputers.Components
             get => GetWakeMessage().Result;
             set => SetWakeMessage(value.Message, value.Fuzzy);
         }
+        
         public int MaxPacketSize => GetMaxPacketSize().Result;
+
         public string Channel => GetChannel().Result;
 #endif
     }

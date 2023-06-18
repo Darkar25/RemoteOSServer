@@ -1,0 +1,12 @@
+{
+    "variants": {
+        "dirt": [
+            { "model": "dirt" },
+            { "model": "dirt", "y": 90 },
+            { "model": "dirt", "y": 180 },
+            { "model": "dirt", "y": 270 }
+        ],
+        "coarse_dirt": { "model": "coarse_dirt" },
+        "podzol": { "model": "podzol" }
+    }
+}

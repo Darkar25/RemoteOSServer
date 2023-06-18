@@ -1,0 +1,12 @@
+{
+    "variants": {
+        "acacia,axis=y":  { "model": "acacia_log" },
+        "acacia,axis=z":   { "model": "acacia_log", "x": 90 },
+        "acacia,axis=x":   { "model": "acacia_log", "x": 90, "y": 90 },
+        "acacia,axis=none": { "model": "acacia_bark" },
+		"dark_oak,axis=y":  { "model": "dark_oak_log" },
+        "dark_oak,axis=z":   { "model": "dark_oak_log", "x": 90 },
+        "dark_oak,axis=x":   { "model": "dark_oak_log", "x": 90, "y": 90 },
+        "dark_oak,axis=none": { "model": "dark_oak_bark" }
+    }
+}

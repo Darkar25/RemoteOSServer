@@ -1,7 +1,9 @@
-﻿namespace RemoteOS.OpenComputers.Components
+﻿using RemoteOS.Helpers;
+
+namespace RemoteOS.OpenComputers.Components
 {
     [Component("motion_sensor")]
-    public class MotionSensorComponent : Component
+    public partial class MotionSensorComponent : Component
     {
         /// <summary>
         /// This event is sent when motion sensor detects movement
@@ -22,13 +24,14 @@
         }
 
         /// <returns>The current sensor sensitivity.</returns>
-        public async Task<int> GetSensitivity() => (await Invoke("getSensitivity"))[0];
+        public partial Task<int> GetSensitivity();
+
         /// <summary>
         /// Sets the sensor's sensitivity.
         /// </summary>
         /// <param name="sensitivity">The new sensitivity value</param>
         /// <returns>The old value</returns>
-        public async Task SetSensitivity(int sensitivity) => await Invoke("setSensitivity", sensitivity);
+        public partial Task SetSensitivity(int sensitivity);
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public int Sensitivity

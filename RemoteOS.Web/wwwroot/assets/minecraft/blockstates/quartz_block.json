@@ -1,0 +1,9 @@
+{
+    "variants": {
+        "default":   { "model": "quartz_normal" },
+        "chiseled":   { "model": "quartz_chiseled" },
+		"lines_y":  { "model": "quartz_lines" },
+        "lines_z":   { "model": "quartz_lines", "x": 90 },
+        "lines_x":   { "model": "quartz_lines", "x": 90, "y": 90 }
+    }
+}

@@ -1,11 +1,13 @@
 ﻿using System.Linq;
 using EasyJSON;
 using RemoteOS.OpenComputers;
+using RemoteOS.OpenComputers.Data;
+using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components
 {
     [Component("modem")]
-    public class ModemComponent : Component
+    public partial class ModemComponent : Component
     {
         bool? _isWireless;
         bool? _isWired;
@@ -33,9 +35,16 @@ namespace RemoteOS.OpenComputers.Components
             });
         }
 
+        public override async Task<Tier> GetTier()
+        {
+            var ver = (await this.GetDeviceInfo()).Version;
+            return (Tier)int.Parse(ver[..ver.IndexOf('.')]) - 1;
+        }
+
         /// <param name="port">Port to check</param>
         /// <returns>Whether the specified port is open.</returns>
         public bool IsOpen(ushort port) => _openPorts.Contains(port);
+
         /// <summary>
         /// Opens the specified port.
         /// </summary>
@@ -45,11 +54,11 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (_openPorts.Contains(port)) return false;
             if (_openPorts.Count >= (await this.GetDeviceInfo()).Size) throw new IOException("Too many open ports");
-            var res = await Invoke("open", port);
-            if (res[0])
-                _openPorts.Add(port);
-            return res[0];
+            var res = await InvokeFirst("open", port);
+            if (res) _openPorts.Add(port);
+            return res;
         }
+
         /// <summary>
         /// Closes the specified port.
         /// </summary>
@@ -57,22 +66,22 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>true if ports were closed.</returns>
         public async Task<bool> Close(ushort port)
         {
-            var res = await Invoke("close", port);
-            if (res[0])
-                _openPorts.Remove(port);
-            return res[0];
+            var res = await InvokeFirst("close", port);
+            if (res) _openPorts.Remove(port);
+            return res;
         }
+
         /// <summary>
         /// Closes all ports.
         /// </summary>
         /// <returns>true if ports were closed.</returns>
         public async Task<bool> Close()
         {
-            var res = await Invoke("close");
-            if (res[0])
-                _openPorts.Clear();
-            return res[0];
+            var res = await InvokeFirst("close");
+            if (res) _openPorts.Clear();
+            return res;
         }
+
         /// <summary>
         /// Sends the specified data to the specified target.
         /// </summary>
@@ -80,40 +89,56 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="port">Port of the receiver</param>
         /// <param name="args">Data to send</param>
         /// <returns>true if data was sent</returns>
-        public async Task<bool> Send(Guid reciever, ushort port, params JSONNode[] args) => (await Invoke("send", reciever, port, args))[0];
+        public partial Task<bool> Send(Guid reciever, ushort port, params JSONNode[] args);
+
+        /// <inheritdoc cref="Send(Guid, ushort, JSONNode[])"/>
+        public Task<bool> Send(ModemComponent reciever, ushort port, params JSONNode[] args) => Send(reciever.Address, port, args);
+
         /// <summary>
         /// Broadcasts the specified data on the specified port.
         /// </summary>
         /// <param name="port">Port to broadcast on</param>
         /// <param name="args">Data to send</param>
         /// <returns>true if data was sent</returns>
-        public async Task<bool> Broadcast(ushort port, params JSONNode[] args) => (await Invoke("broadcast", port, args))[0];
+        public partial Task<bool> Broadcast(ushort port, params JSONNode[] args);
+
         /// <summary>
         /// Set the wake-up message and whether to ignore additional data/parameters.
         /// </summary>
         /// <param name="message">Wake message</param>
         /// <param name="fuzzy">Ignore data</param>
         /// <returns>The old value</returns>
-        public async Task<string> SetWakeMessage(string message, bool fuzzy = false) => _wakeMessage = (await Invoke("setWakeMessage", message, fuzzy))[0];
+        public async Task<string> SetWakeMessage(string message, bool fuzzy = false)
+        {
+            var res = await InvokeFirst("setWakeMessage", message, fuzzy);
+			_wakeMessage = message;
+            return res;
+		}
+
         /// <returns>Whether this card has wireless networking capability.</returns>
-        public async Task<bool> IsWireless() => _isWireless ??= (await Invoke("isWireless"))[0];
+        public async Task<bool> IsWireless() => _isWireless ??= await InvokeFirst("isWireless");
+
         /// <returns>Whether this card has wired networking capability.</returns>
-        public async Task<bool> IsWired() => _isWired ??= (await Invoke("isWired"))[0];
+        public async Task<bool> IsWired() => _isWired ??= await InvokeFirst("isWired");
+
         /// <returns>The maximum packet size (config setting).</returns>
         public async Task<int> GetMaxPacketSize() => _maxPacketSize ??=
 #if ROS_GLOBAL_CACHING
             GlobalCache.maxNetworkPacketSize ??= 
 #endif
-            (await Invoke("maxPacketSize"))[0];
+            await InvokeFirst("maxPacketSize");
+
         /// <returns>The signal strength (range) used when sending messages.</returns>
-        public async Task<int> GetStrength() => _strength ??= (await Invoke("getStrength"))[0];
+        public async Task<int> GetStrength() => _strength ??= await InvokeFirst("getStrength");
+
         /// <summary>
         /// Set the signal strength (range) used when sending messages.
         /// </summary>
         /// <param name="strength">New strength value</param>
-        public async Task SetStrength(int strength) => _strength = (await Invoke("setStrength", strength))[0];
+        public async Task SetStrength(int strength) => _strength = await InvokeFirst("setStrength", strength);
+
         /// <returns>The current wake-up message.</returns>
-        public async Task<string> GetWakeMessage() => _wakeMessage ??= (await Invoke("getWakeMessage"))[0];
+        public async Task<string> GetWakeMessage() => _wakeMessage ??= await InvokeFirst("getWakeMessage");
 
         public bool this[ushort port]
         {
@@ -129,13 +154,17 @@ namespace RemoteOS.OpenComputers.Components
 
 #if ROS_PROPERTIES
         public bool Wireless => IsWireless().Result;
+
         public bool Wired => IsWired().Result;
+
         public int MaxPacketSize => GetMaxPacketSize().Result;
+
         public int Strength
         {
             get => GetStrength().Result;
             set => SetStrength(value);
         }
+
         public string WakeMessage => GetWakeMessage().Result;
 #endif
     }

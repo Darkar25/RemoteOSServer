@@ -1,0 +1,8 @@
+{
+    "variants": {
+        "stonebrick": { "model": "stonebrick_normal" },
+        "chiseled_stonebrick": { "model": "stonebrick_chiseled" },
+        "mossy_stonebrick": { "model": "stonebrick_mossy" },
+        "cracked_stonebrick": { "model": "stonebrick_cracked" }
+    }
+}
