@@ -1,5 +1,7 @@
 using System.Runtime.InteropServices;
 
+// ReSharper disable ClassNeverInstantiated.Global
+
 namespace RemoteOS.OpenComputers.Components.Computronics
 {
     [Component("chat_box")]
