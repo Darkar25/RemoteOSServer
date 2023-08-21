@@ -1,11 +1,9 @@
-using System.Collections;
-
-namespace RemoteOS.OpenComputers.Components.Computronics;
+namespace RemoteOSServer.OpenComputers.Data;
 
 public class Entity
 {
-    public string Name;
     public double Distance;
+    public string Name;
 
     public Entity(string name, double distance)
     {
@@ -31,4 +29,3 @@ public class Item
         Size = size;
     }
 }
-

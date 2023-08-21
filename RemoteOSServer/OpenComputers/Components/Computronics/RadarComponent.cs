@@ -1,4 +1,4 @@
-using EasyJSON;
+using RemoteOSServer.OpenComputers.Data;
 
 namespace RemoteOS.OpenComputers.Components.Computronics
 {
@@ -30,6 +30,7 @@ namespace RemoteOS.OpenComputers.Components.Computronics
             return (await Invoke("getEntities", distance))[0].Linq
                 .Select(entity => new Entity(entity.Value["name"], entity.Value["distance"])).ToList();
         }
+
         /// <summary>
         /// Return all items located on the ground within a radius
         /// </summary>
@@ -41,6 +42,7 @@ namespace RemoteOS.OpenComputers.Components.Computronics
                 new Item(item.Value["damage"], item.Value["distance"], item.Value["hasTag"], item.Value["label"],
                     item.Value["size"])).ToList();
         }
+
         /// <summary>
         /// Return all mob essences placed next to the radar
         /// </summary>

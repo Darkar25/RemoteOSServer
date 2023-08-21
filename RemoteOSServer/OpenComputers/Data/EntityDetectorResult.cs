@@ -1,7 +1,4 @@
-using EasyJSON;
-using RemoteOS.OpenComputers.Components.Computronics;
-
-namespace RemoteOS.OpenComputers.Components.OpenSecurity
+namespace RemoteOSServer.OpenComputers.Data
 {
     public class OsEntity : Entity
     {
