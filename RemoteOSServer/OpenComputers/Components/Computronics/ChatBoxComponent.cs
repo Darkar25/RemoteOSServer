@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using RemoteOS.Helpers;
 
 // ReSharper disable ClassNeverInstantiated.Global
 

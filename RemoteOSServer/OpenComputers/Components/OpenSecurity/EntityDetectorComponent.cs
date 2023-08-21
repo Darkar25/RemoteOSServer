@@ -1,4 +1,5 @@
 using System.Numerics;
+using RemoteOS.Helpers;
 using RemoteOSServer.OpenComputers.Data;
 
 namespace RemoteOS.OpenComputers.Components.OpenSecurity
@@ -41,10 +42,10 @@ namespace RemoteOS.OpenComputers.Components.OpenSecurity
         /// </summary>
         /// <param name="range">radius of action</param>
         /// <returns>Entity List</returns>
-        public async Task<IEnumerable<OsEntity>> ScanEntities(int range = 64)
+        public async Task<IEnumerable<OpenSecurityEntity>> ScanEntities(int range = 64)
         {
             return (await Invoke("scanEntities", range))[0].Linq
-                .Select(entity => new OsEntity(entity.Value["name"], entity.Value["range"], entity.Value["x"],
+                .Select(entity => new OpenSecurityEntity(entity.Value["name"], entity.Value["range"], entity.Value["x"],
                     entity.Value["y"], entity.Value["z"])).ToList();
         }
 
@@ -53,10 +54,10 @@ namespace RemoteOS.OpenComputers.Components.OpenSecurity
         /// </summary>
         /// <param name="range">radius of action</param>
         /// <returns>Players List</returns>
-        public async Task<IEnumerable<OsEntity>> ScanPlayers(int range = 64)
+        public async Task<IEnumerable<OpenSecurityEntity>> ScanPlayers(int range = 64)
         {
             return (await Invoke("scanPlayers", range))[0].Linq
-                .Select(player => new OsEntity(player.Value["name"], player.Value["range"], player.Value["x"],
+                .Select(player => new OpenSecurityEntity(player.Value["name"], player.Value["range"], player.Value["x"],
                     player.Value["y"], player.Value["z"])).ToList();
         }
     }
