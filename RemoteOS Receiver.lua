@@ -1,63 +1,17 @@
 local host = "localhost"
 local port = 4466
 
--- Modified JSON encoding library, https://github.com/rxi/json.lua/blob/master/json.lua
+-- Modified & Minified JSON encoding library, https://github.com/rxi/json.lua/blob/master/json.lua
 
-json = {}
-local encode
-local function encode_nil(val)
-  return "null"
-end
-local function encode_table(val, stack)
-	local res = {}
-	local array = true
-	local length = 0
-	local nLen = 0
-	for k,v in pairs(val) do
-		if (type(k) ~= "number" or k<=0) and not (k == "n" and type(v) == "number") then
-			array = nil
-			break
-		end
-		if k > length then 
-			length = k
-		end
-		if k == "n" and type(v) == "number" then
-			nLen = v
-		end
-	end
-	if array then
-		if nLen > length then
-			length = nLen
-		end
-		for i=1,length do
-			table.insert(res, encode(val[i], stack))
-		end
-		return table.concat({"[", table.concat(res, ","), "]"})
-	end
-    for k, v in pairs(val) do
-		table.insert(res, table.concat({encode(k, stack), ":", encode(v, stack)}))
-    end
-    return table.concat({"{", table.concat(res, ","), "}"})
-end
-local function encode_number(val)
-	return (val ~= val and "NaN") or (val <= -math.huge and "-Infinity") or (val >= math.huge and "Infinity") or tostring(val)
-end
-local function encode_string(val)
-  return string.format("%q", val)
-end
-local type_func_map = {
-  [ "nil"     ] = encode_nil,
-  [ "table"   ] = encode_table,
-  [ "string"  ] = encode_string,
-  [ "number"  ] = encode_number,
-  [ "boolean" ] = tostring,
-}
-encode = function(val)
-  return type_func_map[type(val)](val)
-end
-function json.encode(val)
-  return (encode(val))
-end
+local json={}
+local e
+e=function(v)return({
+["nil"]=function()return"null"end,
+["table"]=function(v)local r={}if#v>0 and next(v,#v)==nil then for i=1,#v do r[i]=e(v[i])end return"["..table.concat(r,",").."]"end for k,j in pairs(v)do r[#r+1]=e(k)..":"..e(j)end return"{"..table.concat(r,",").."}"end,
+["string"]=function(v)return string.format("%q",v)end,
+["number"]=function(v)return v~=v and"NaN"or v<=-math.huge and"-Infinity"or v>=math.huge and"Infinity"or tostring(v)end,
+["boolean"]=tostring})[type(v)](v)end
+function json.encode(v)return e(v)end
 
 -- RemoteOS main program
 
@@ -85,7 +39,7 @@ while true do
 					if event[1] == "internet_ready" and event[3] == sockid then
 						while true do
 							local d = sock.read()
-							if d ~= nim and #d > 0 then
+							if d ~= nil and #d > 0 then
 								exec = exec .. d
 							else break end
 						end
