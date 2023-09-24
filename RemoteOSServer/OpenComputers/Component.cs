@@ -49,23 +49,34 @@ namespace RemoteOS.OpenComputers
         }
 
         /// <summary>
-        /// Invokes the mothod on this component
+        /// Invokes the method on this component
         /// </summary>
         /// <param name="methodName">The method to invoke</param>
         /// <param name="args">Arguments to call the method with</param>
         /// <returns>Result of the method invocation</returns>
         public async Task<JSONNode> Invoke(string methodName, params object[] args) => await Parent.Execute($"{await GetHandle()}.{methodName}({string.Join(",", args.Select(x => x.Luaify()))})");
 
-		/// <summary>
-		/// Invokes the mothod on this component and returns the first element from the result
+        /// <summary>
+		/// Invokes the method on this component. The name of the executed method will be the same as the name of the method that calls this Invoke..
 		/// </summary>
 		/// <param name="methodName">The method to invoke</param>
-		/// <param name="args">Arguments to call the method with</param>
 		/// <returns>Result of the method invocation</returns>
-		public async Task<JSONNode> InvokeFirst(string methodName, params object[] args) => (await Invoke(methodName, args))[0];
-        
+        public InvokeDelegate GetInvoker([CallerMemberName] string methodName = "") => (args) => Invoke(ToCamelCase(methodName), args);
+
+        public delegate Task<JSONNode> InvokeDelegate(params object[] args);
+
         /// <returns>The slot this component is occupying</returns>
-        public async Task<int> GetSlot() => _slot ??= await InvokeFirst("slot");
+        public async Task<int> GetSlot() => _slot ??= (await Invoke("slot"))[0];
+
+        private static string ToCamelCase(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return name;
+
+            // Convert consecutive uppercase characters to lowercase
+            var fixedName = new string(name.Select((x, y) => y > 0 && char.IsUpper(name[y - 1]) ? char.ToLowerInvariant(x) : x).ToArray());
+            // Make first letter lowercase
+            return char.ToLowerInvariant(fixedName[0]) + fixedName[1..];
+        }
 
 #if ROS_PROPERTIES
         public int Slot => GetSlot().Result;

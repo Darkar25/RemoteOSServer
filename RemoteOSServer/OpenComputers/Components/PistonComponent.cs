@@ -14,7 +14,7 @@ namespace RemoteOS.OpenComputers.Components
         bool? _isSticky;
 
         /// <returns>true if the piston is sticky, i.e. it can also pull.</returns>
-        public async Task<bool> IsSticky() => _isSticky ??= await InvokeFirst("isSticky");
+        public async Task<bool> IsSticky() => _isSticky ??= (await GetInvoker()())[0];
 
         /// <summary>
         /// Tries to push the block on the specified side of the container of the upgrade.
@@ -28,7 +28,7 @@ namespace RemoteOS.OpenComputers.Components
         /// </summary>
         /// <param name="side">The side to pull</param>
         /// <returns>true if block was pulled</returns>
-        public async Task<bool> Pull(Sides side) => await IsSticky() && await InvokeFirst("pull", side);
+        public async Task<bool> Pull(Sides side) => await IsSticky() && (await GetInvoker()(side))[0];
 
 #if ROS_PROPERTIES
         public bool Sticky => IsSticky().Result;

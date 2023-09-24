@@ -43,7 +43,7 @@ namespace RemoteOS.OpenComputers.Components
         public partial Task<bool> IsRunning();
 
         /// <returns>The reason the microcontroller crashed, if applicable.</returns>
-        public async Task<string> GetLastError() => await InvokeFirst("lastError");
+        public async Task<string> GetLastError() => (await Invoke("lastError"))[0];
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public bool Running => IsRunning().Result;

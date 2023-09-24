@@ -29,7 +29,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (_wakeMessage is null || _wakeFuzzy is null)
             {
-                var res = await Invoke("getWakeMessage");
+                var res = await GetInvoker()();
                 _wakeMessage = res[0];
                 _wakeFuzzy = res[1];
             }
@@ -45,7 +45,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             _wakeMessage = message;
             _wakeFuzzy = fuzzy;
-            return Invoke("setWakeMessage", _wakeMessage, _wakeFuzzy);
+            return GetInvoker()(_wakeMessage, _wakeFuzzy);
         }
 
         /// <returns>The maximum packet size (config setting).</returns>
@@ -53,10 +53,10 @@ namespace RemoteOS.OpenComputers.Components
 #if ROS_GLOBAL_CACHING
             GlobalCache.maxNetworkPacketSize ??= 
 #endif
-            await InvokeFirst("maxPacketSize");
+            (await Invoke("maxPacketSize"))[0];
 
         /// <returns>This link card's shared channel address</returns>
-        public async Task<string> GetChannel() => _channel ??= await InvokeFirst("getChannel");
+        public async Task<string> GetChannel() => _channel ??= (await GetInvoker()())[0];
 
 #if ROS_PROPERTIES
         public (string Message, bool Fuzzy) WakeMessage

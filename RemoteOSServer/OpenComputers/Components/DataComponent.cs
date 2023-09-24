@@ -24,7 +24,7 @@ namespace RemoteOS.OpenComputers.Components
 #if ROS_GLOBAL_CACHING
             GlobalCache.dataCardHardLimit ??=
 #endif
-            await InvokeFirst("getLimit");
+            (await GetInvoker()())[0];
 
 #if ROS_PROPERTIES
         public int Limit => GetLimit().Result;

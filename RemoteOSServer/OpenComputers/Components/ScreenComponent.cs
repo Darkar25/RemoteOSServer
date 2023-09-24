@@ -100,7 +100,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>The aspect ratio of the screen. For multi-block screens this is the number of blocks, horizontal and vertical.</returns>
         public async Task<(int Width, int Height)> GetAspectRatio()
         {
-            var res = await Invoke("getAspectRatio");
+            var res = await GetInvoker()();
             return (res[0], res[1]);
         }
 
@@ -123,7 +123,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<IEnumerable<KeyboardComponent>> GetKeyboards()
         {
             var comps = await Parent.GetComponents();
-            return (await Invoke("getKeyboards")).Linq.Select(x => comps.Get<KeyboardComponent>(Guid.Parse(x.Value.Value))).Where(x => x is not null);
+            return (await GetInvoker()()).Linq.Select(x => comps.Get<KeyboardComponent>(Guid.Parse(x.Value.Value))).Where(x => x is not null);
         }
 
         /// <returns>Whether the screen is in high precision mode (sub-pixel mouse event positions).</returns>
@@ -134,7 +134,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> SetPrecise(bool precise)
         {
             if (await GetTier() < Tier.Three) throw new NotSupportedException("Precise mode is not supported on this screen");
-            return await InvokeFirst("setPrecise", precise);
+            return (await GetInvoker()(precise))[0];
         }
 
         /// <returns>Whether touch mode is inverted (sneak-activate opens GUI, instead of normal activate).</returns>

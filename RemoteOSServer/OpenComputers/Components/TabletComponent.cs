@@ -5,7 +5,7 @@ using RemoteOS.Helpers;
 namespace RemoteOS.OpenComputers.Components
 {
     [Component("tablet")]
-    public class TabletComponent : Component
+    public partial class TabletComponent : Component
     {
         /// <summary>
         /// This event is sent when player uses tablet to analyze a block
@@ -29,10 +29,10 @@ namespace RemoteOS.OpenComputers.Components
         }
 
         /// <returns>The pitch of the player holding the tablet.</returns>
-        public async Task<float> GetPitch() => await InvokeFirst("getPitch");
+        public partial Task<float> GetPitch();
 
         /// <returns>The yaw of the player holding the tablet.</returns>
-        public async Task<float> GetYaw() => await InvokeFirst("getYaw");
+        public partial Task<float> GetYaw();
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public float Pitch => GetPitch().Result;

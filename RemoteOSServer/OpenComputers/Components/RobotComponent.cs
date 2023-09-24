@@ -21,7 +21,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<ReasonOr<Success>> Move(Sides direction)
         {
             direction.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom, Sides.Back);
-            var cmd = await Invoke("move", direction);
+            var cmd = await GetInvoker()(direction);
             if (!cmd[0]) return new Reason(cmd[1].Value);
             return new Success();
         }
@@ -34,7 +34,7 @@ namespace RemoteOS.OpenComputers.Components
         public partial Task<bool> Turn(bool clockwise);
 
         /// <returns>The durability of the currently equipped tool.</returns>
-        public async Task<float> GetDurability() => await InvokeFirst("durability");
+        public async Task<float> GetDurability() => (await Invoke("durability"))[0];
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public float Durabitliy => GetDurability().Result;
 #endif

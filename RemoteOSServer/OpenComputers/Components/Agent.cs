@@ -58,7 +58,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<ReasonOr<Success>> Swing(Sides side = Sides.Front, bool sneaky = false)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            var cmd = await Invoke("swing", side, sneaky);
+            var cmd = await GetInvoker()(side, sneaky);
             if (!cmd[0]) return cmd[1].Value;
             return new Success();
         }
@@ -69,7 +69,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
 			face.ThrowIfOppositeTo(side);
-			var cmd = await Invoke("swing", side, face, sneaky);
+			var cmd = await GetInvoker()(side, face, sneaky);
 			if (!cmd[0]) return cmd[1].Value;
 			return new Success();
 		}
@@ -84,7 +84,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<ReasonOr<Success>> Use(Sides side = Sides.Front, bool sneaky = false, int duration = 0)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            var cmd = await Invoke("use", side, sneaky, duration);
+            var cmd = await GetInvoker()(side, sneaky, duration);
 			if (!cmd[0]) return cmd[1].Value;
 			return new Success();
 		}
@@ -95,7 +95,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             face.ThrowIfOppositeTo(side);
-            var cmd = await Invoke("use", side, face, sneaky, duration);
+            var cmd = await GetInvoker()(side, face, sneaky, duration);
 			if (!cmd[0]) return cmd[1].Value;
 			return new Success();
 		}
@@ -109,7 +109,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<ReasonOr<Success>> Place(Sides side = Sides.Front, bool sneaky = false)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            var cmd = await Invoke("place", side, sneaky);
+            var cmd = await GetInvoker()(side, sneaky);
 			if (!cmd[0]) return cmd[1].Value;
 			return new Success();
 		}
@@ -120,7 +120,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
 			face.ThrowIfOppositeTo(side);
-			var cmd = await Invoke("place", side, face, sneaky);
+			var cmd = await GetInvoker()(side, face, sneaky);
 			if (!cmd[0]) return cmd[1].Value;
 			return new Success();
 		}
@@ -131,7 +131,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> Count(int slot)
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("count", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <param name="slot">The slot to get the remaining space from</param>
@@ -140,7 +140,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> Space(int slot)
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("space", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CompareTo(int slot, bool checkNBT = false)
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("compareTo", slot, checkNBT);
+            return (await GetInvoker()(slot, checkNBT))[0];
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> TransferTo(int slot)
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("transferTo", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <inheritdoc cref="TransferTo(int)"/>
@@ -173,7 +173,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> TransferTo(int slot, int amount)
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("transferTo", slot, amount);
+            return (await GetInvoker()(slot, amount));
         }
 
         /// <param name="slot">The tank to get level from</param>
@@ -182,7 +182,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> TankLevel(int slot)
         {
             if (slot <= 0 || slot > await GetTankCount()) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            return await InvokeFirst("tankLevel", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <param name="slot">The tank to get remaining space from</param>
@@ -191,7 +191,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> TankSpace(int slot)
         {
             if (slot <= 0 || slot > await GetTankCount()) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            return await InvokeFirst("tankSpace", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <summary>
@@ -203,7 +203,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CommareFluidTo(int slot)
         {
             if (slot <= 0 || slot > await GetTankCount()) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            return await InvokeFirst("compareFluidTo", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <summary>
@@ -216,7 +216,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> TransferFluidTo(int slot, int amount = 1000)
         {
             if (slot <= 0 || slot > await GetTankCount()) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            return await InvokeFirst("transferFluidTo", slot, amount);
+            return (await GetInvoker()(slot, amount))[0];
         }
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<(bool Passable, string Description)> Detect(Sides side)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            var res = await Invoke("detect", side);
+            var res = (await GetInvoker()(side))[0];
             return (!res[0], res[1]);
         }
 
@@ -239,7 +239,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CompareFluid(Sides side)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            return await InvokeFirst("compareFluid", side);
+            return (await GetInvoker()(side))[0];
         }
 
         /// <summary>
@@ -251,7 +251,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<OneOf<int, Error>> Drain(Sides side, int amount = 1000)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            var res = await Invoke("drain", side, amount);
+            var res = await GetInvoker()(side, amount);
 			if (!res[0]) return new Error();
 			return res[1].AsInt;
 		}
@@ -265,7 +265,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<OneOf<int, Error>> Fill(Sides side, int amount = 1000)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            var res = await Invoke("fill", side, amount);
+            var res = await GetInvoker()(side, amount);
 			if (!res[0]) return new Error();
 			return res[1].AsInt;
 		}
@@ -282,7 +282,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> Compare(Sides side, bool fuzzy = false)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            return await InvokeFirst("compare", side, fuzzy);
+            return (await GetInvoker()(side, fuzzy))[0];
         }
 
         /// <summary>
@@ -294,7 +294,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> Drop(Sides side, int amount = 64)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            return await InvokeFirst("drop", side, amount);
+            return (await GetInvoker()(side, amount))[0];
         }
 
         /// <summary>
@@ -306,28 +306,28 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<OneOf<int, Error>> Suck(Sides side, int amount = 64)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            var res = await Invoke("suck", side, amount);
+            var res = (await GetInvoker()(side, amount))[0];
 			if (res[0].IsBoolean) return new Error();
 			return res[0].AsInt;
         }
 
         /// <returns>The name of agent.</returns>
-        public async Task<string> GetName() => _name ??= await InvokeFirst("name");
+        public async Task<string> GetName() => _name ??= (await Invoke("name"))[0];
 
         /// <returns>The current color of the activity light</returns>
-        public async Task<Color> GetLightColor() => _color ??= Color.FromArgb(await InvokeFirst("getLightColor"));
+        public async Task<Color> GetLightColor() => _color ??= Color.FromArgb((await GetInvoker()())[0]);
 
         /// <summary>
         /// Set the color of the activity light to the specified color
         /// </summary>
         /// <param name="color">New color</param>
-        public async Task SetLightColor(Color color) => _color = Color.FromArgb(await InvokeFirst("setLightColor", color));
+        public async Task SetLightColor(Color color) => _color = Color.FromArgb((await GetInvoker()(color))[0]);
 
         /// <returns>The size of this device's internal inventory.</returns>
         public async Task<int> GetInventorySize() => (await this.GetDeviceInfo()).Capacity;
 
         /// <returns>The currently selected slot</returns>
-        public async Task<int> GetSelectedSlot() => _selectedSlot ??= await InvokeFirst("select");
+        public async Task<int> GetSelectedSlot() => _selectedSlot ??= (await Invoke("select"))[0];
 
         /// <summary>
         /// Set the selected slot
@@ -338,20 +338,20 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (slot <= 0 || slot > await GetInventorySize()) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
             if (slot == await GetSelectedSlot()) return; //Nothing to do
-            _selectedSlot = await InvokeFirst("select", slot);
+            _selectedSlot = (await Invoke("select", slot))[0];
         }
 
         /// <returns>The number of items in the selected slot</returns>
-        public async Task<int> GetSelectedSlotCount() => await InvokeFirst("count");
+        public async Task<int> GetSelectedSlotCount() => (await Invoke("count"))[0];
 
         /// <returns>The remaining space in the selected slot</returns>
-        public async Task<int> GetSelectedSlotSpace() => await InvokeFirst("space");
+        public async Task<int> GetSelectedSlotSpace() => (await Invoke("space"))[0];
 
         /// <returns>The number of tanks installed in the device.</returns>
-        public async Task<int> GetTankCount() => _tnkCount ??= await InvokeFirst("tankCount");
+        public async Task<int> GetTankCount() => _tnkCount ??= (await Invoke("tankCount"))[0];
 
         /// <returns>The number of the currently selected tank.</returns>
-        public async Task<int> GetSelectedTank() => _selectedTank ??= await InvokeFirst("selectTank");
+        public async Task<int> GetSelectedTank() => _selectedTank ??= (await Invoke("selectTank"))[0];
 
         /// <summary>
         /// Select a tank and get the number of the currently selected tank.
@@ -363,15 +363,15 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (tank <= 0 || tank > await GetTankCount()) throw new InventoryException(InventoryException.NO_SUCH_TANK);
             if (tank != await GetSelectedTank()) //Check if we really need to change the tank
-                _selectedTank = await InvokeFirst("selectTank", tank);
+                _selectedTank = (await Invoke("selectTank", tank))[0];
             return await GetSelectedTank();
         }
 
         /// <returns>The fluid amount in the selected tank.</returns>
-        public async Task<int> GetSelectedTankLevel() => await InvokeFirst("tankLevel");
+        public async Task<int> GetSelectedTankLevel() => (await Invoke("tankLevel"))[0];
 
         /// <returns>The remaining space in the selected tank.</returns>
-        public async Task<int> GetSelectedTankSpace() => await InvokeFirst("tankSpace");
+        public async Task<int> GetSelectedTankSpace() => (await Invoke("tankSpace"))[0];
 
 #if ROS_PROPERTIES
         public string Name => GetName().Result;

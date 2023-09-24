@@ -20,7 +20,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Wheter the insertion was successful and the reason why if it wasnt</returns>
         public async Task<ReasonOr<Success>> Insert(int count = 64)
         {
-            var res = await Invoke("insert", count);
+            var res = await GetInvoker()(count);
             if (!res[0]) return new Reason(res[1].Value);
             return new Success();
         }
@@ -33,7 +33,7 @@ namespace RemoteOS.OpenComputers.Components
         public partial Task<bool> Remove(int count = int.MaxValue);
 
         /// <returns>The size of the item stack in the generator's queue.</returns>
-        public async Task<int> GetCount() => await InvokeFirst("count");
+        public async Task<int> GetCount() => (await Invoke("count"))[0];
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public int Count => GetCount().Result;

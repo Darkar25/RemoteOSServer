@@ -54,7 +54,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (_openPorts.Contains(port)) return false;
             if (_openPorts.Count >= (await this.GetDeviceInfo()).Size) throw new IOException("Too many open ports");
-            var res = await InvokeFirst("open", port);
+            var res = (await GetInvoker()(port))[0];
             if (res) _openPorts.Add(port);
             return res;
         }
@@ -66,7 +66,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>true if ports were closed.</returns>
         public async Task<bool> Close(ushort port)
         {
-            var res = await InvokeFirst("close", port);
+            var res = (await GetInvoker()(port))[0];
             if (res) _openPorts.Remove(port);
             return res;
         }
@@ -77,7 +77,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>true if ports were closed.</returns>
         public async Task<bool> Close()
         {
-            var res = await InvokeFirst("close");
+            var res = (await GetInvoker()())[0];
             if (res) _openPorts.Clear();
             return res;
         }
@@ -110,35 +110,35 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>The old value</returns>
         public async Task<string> SetWakeMessage(string message, bool fuzzy = false)
         {
-            var res = await InvokeFirst("setWakeMessage", message, fuzzy);
+            var res = (await GetInvoker()(message, fuzzy))[0];
 			_wakeMessage = message;
             return res;
 		}
 
         /// <returns>Whether this card has wireless networking capability.</returns>
-        public async Task<bool> IsWireless() => _isWireless ??= await InvokeFirst("isWireless");
+        public async Task<bool> IsWireless() => _isWireless ??= (await GetInvoker()())[0];
 
         /// <returns>Whether this card has wired networking capability.</returns>
-        public async Task<bool> IsWired() => _isWired ??= await InvokeFirst("isWired");
+        public async Task<bool> IsWired() => _isWired ??= (await GetInvoker()())[0];
 
         /// <returns>The maximum packet size (config setting).</returns>
         public async Task<int> GetMaxPacketSize() => _maxPacketSize ??=
 #if ROS_GLOBAL_CACHING
             GlobalCache.maxNetworkPacketSize ??= 
 #endif
-            await InvokeFirst("maxPacketSize");
+            (await Invoke("maxPacketSize"))[0];
 
         /// <returns>The signal strength (range) used when sending messages.</returns>
-        public async Task<int> GetStrength() => _strength ??= await InvokeFirst("getStrength");
+        public async Task<int> GetStrength() => _strength ??= (await GetInvoker()())[0];
 
         /// <summary>
         /// Set the signal strength (range) used when sending messages.
         /// </summary>
         /// <param name="strength">New strength value</param>
-        public async Task SetStrength(int strength) => _strength = await InvokeFirst("setStrength", strength);
+        public async Task SetStrength(int strength) => _strength = (await GetInvoker()(strength))[0];
 
         /// <returns>The current wake-up message.</returns>
-        public async Task<string> GetWakeMessage() => _wakeMessage ??= await InvokeFirst("getWakeMessage");
+        public async Task<string> GetWakeMessage() => _wakeMessage ??= (await GetInvoker()())[0];
 
         public bool this[ushort port]
         {

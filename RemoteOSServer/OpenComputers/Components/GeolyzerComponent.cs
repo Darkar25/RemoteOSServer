@@ -50,7 +50,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Block information</returns>
         public async Task<GeolyzerResult> Analyze(Sides side)
         {
-            var res = await InvokeFirst("analyze", side);
+            var res = (await GetInvoker()(side))[0];
             return new()
             {
                 Color = Color.FromArgb(res["color"]),
@@ -79,7 +79,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>Whether the block is passable and its description</returns>
         public async Task<(bool Passable, string Description)> Detect(Sides side)
         {
-            var res = await Invoke("detect", side);
+            var res = await GetInvoker()(side);
             return (res[0], res[1]);
         }
 

@@ -68,8 +68,6 @@ public class ComponentMethodGenerator : ISourceGenerator
 				}
 
 				var isAsync = returnTypeSymbol.TypeArguments.Any();
-				var methodName = ConvertName(methodSymbol.Name);
-				var invokeMethod = isAsync ? "InvokeFirst" : "Invoke";
 
 				var parameters = "";
 				var arguments = "";
@@ -77,11 +75,11 @@ public class ComponentMethodGenerator : ISourceGenerator
 				if (methodSymbol.Parameters.Any())
 				{
 					parameters = methodSymbol.Parameters.Select(p => (p.IsParams ? "params " : "") + p.Type + " " + p.Name).Aggregate((p1, p2) => $"{p1}, {p2}");
-					arguments = ", " + methodSymbol.Parameters.Select(p => p.Name).Aggregate((p1, p2) => $"{p1}, {p2}");
+					arguments = methodSymbol.Parameters.Select(p => p.Name).Aggregate((p1, p2) => $"{p1}, {p2}");
 				}
 
 				methodBuilder.AppendLine($@"
-		{methodDeclaration.Modifiers}{(isAsync ? " async" : "")} {returnTypeSymbol} {methodSymbol.Name}({parameters}) => {(isAsync ? "await " : "")}{invokeMethod}(""{methodName}""{arguments});");
+		{methodDeclaration.Modifiers}{(isAsync ? " async" : "")} {returnTypeSymbol} {methodSymbol.Name}({parameters}) => {(isAsync ? "(await " : "")}GetInvoker()({arguments}){(isAsync ? ")[0]" : "")};");
 			}
 
 			var sourceCode = $@"namespace {classSymbol.ContainingNamespace.ToDisplayString()}
@@ -130,18 +128,5 @@ public class ComponentMethodGenerator : ISourceGenerator
 			if (syntaxNode is ClassDeclarationSyntax classDeclaration)
 				CandidateClasses.Add(classDeclaration);
 		}
-	}
-
-	private static string ConvertName(string name)
-	{
-		if (string.IsNullOrEmpty(name))
-		{
-			return name;
-		}
-
-		// Convert consecutive uppercase characters to lowercase
-		var fixedName = new string(name.Select((x, y) => y > 0 && char.IsUpper(name[y - 1]) ? char.ToLowerInvariant(x) : x).ToArray());
-		// Make first letter lowercase
-		return char.ToLowerInvariant(fixedName[0]) + fixedName.Substring(1);
 	}
 }

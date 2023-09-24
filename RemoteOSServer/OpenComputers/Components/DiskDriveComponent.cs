@@ -20,7 +20,7 @@ namespace RemoteOS.OpenComputers.Components
         public partial Task<bool> Eject(float velocity = 0);
 
         /// <returns>The internal floppy disk address</returns>
-        public async Task<string> GetMedia() => await InvokeFirst("media");
+        public async Task<string> GetMedia() => (await Invoke("media"))[0];
 
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED

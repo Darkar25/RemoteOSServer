@@ -20,7 +20,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>How many items were crafter or an error</returns>
         public async Task<OneOf<int, Error>> Craft(int count = 64)
         {
-            var res = await Invoke("craft", count);
+            var res = await GetInvoker()(count);
 			if (!res[0]) return new Error();
 			return res[1].AsInt;
         }

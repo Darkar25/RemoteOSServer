@@ -16,7 +16,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <inheritdoc cref="GetTankCapacity(Sides, int)"/>
         public async Task<ReasonOr<int>> GetTankCapacity(Sides side)
         {
-            var res = await Invoke("getTankCapacity", side);
+            var res = await GetInvoker()(side);
             if (!res[0].IsNumber) return res[1].Value;
             return res[0].AsInt;
         }
@@ -28,7 +28,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<ReasonOr<int>> GetTankCapacity(Sides side, int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            var res = await Invoke("getTankCapacity", side, slot);
+            var res = await GetInvoker()(side, slot);
 			if (!res[0].IsNumber) return res[1].Value;
 			return res[0].AsInt;
 		}
@@ -36,7 +36,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <inheritdoc cref="GetTankLevel(Sides, int)"/>
         public async Task<ReasonOr<int>> GetTankLevel(Sides side)
         {
-            var res = await Invoke("getTankLevel", side);
+            var res = await GetInvoker()(side);
 			if (!res[0].IsNumber) return res[1].Value;
 			return res[0].AsInt;
 		}
@@ -48,7 +48,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<OneOf<int, string>> GetTankLevel(Sides side, int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            var res = await Invoke("getTankLevel", side, slot);
+            var res = await GetInvoker()(side, slot);
 			if (!res[0].IsNumber) return res[1].Value;
 			return res[0].AsInt;
 		}
@@ -56,7 +56,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <inheritdoc cref="GetFluidInTank(Sides, int)"/>
         public async Task<FluidInfo> GetFluidInTank(Sides side)
         {
-            var res = await Invoke("getFluidInTank", side);
+            var res = await GetInvoker()(side);
             return new()
             {
                 Amount = res["amount"],
@@ -71,7 +71,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>A description of the fluid in the the tank on the specified side.</returns>
         public async Task<FluidInfo> GetFluidInTank(Sides side, int slot)
         {
-            var res = await Invoke("getFluidInTank", side, slot);
+            var res = await GetInvoker()(side, slot);
             return new()
             {
                 Amount = res["amount"],
@@ -87,7 +87,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<FluidInfo> GetFluidInInternalTank(int slot)
         {
             if (slot <= 0 || ((await Parent.GetComponents()).TryGet<Agent>(out var a) && slot > await a.GetTankCount())) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            var res = await Invoke("getFluidInInternalTank", slot);
+            var res = await GetInvoker()(slot);
             return new()
             {
                 Amount = res["amount"],
@@ -100,7 +100,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <inheritdoc cref="GetFluidInInternalTank(int)"/>
         public async Task<FluidInfo> GetFluidInInternalTank()
         {
-            var res = await Invoke("getFluidInInternalTank");
+            var res = await GetInvoker()();
             return new()
             {
                 Amount = res["amount"],
@@ -136,7 +136,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> GetTankCapacityInSlot(int slot)
         {
             if (slot <= 0 || ((await Parent.GetComponents()).TryGet<Agent>(out var a) && slot > await a.GetTankCount())) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            return await InvokeFirst("getTankCapacityInSlot", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <inheritdoc cref="GetTankCapacityInSlot(int)"/>
@@ -148,7 +148,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> GetTankLevelInSlot(int slot)
         {
             if (slot <= 0 || ((await Parent.GetComponents()).TryGet<Agent>(out var a) && slot > await a.GetTankCount())) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            return await InvokeFirst("getTankLevelInSlot", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <inheritdoc cref="GetTankLevelInSlot(int)"/>
@@ -160,7 +160,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<FluidInfo> GetFluidInTankInSlot(int slot)
         {
             if (slot <= 0 || ((await Parent.GetComponents()).TryGet<Agent>(out var a) && slot > await a.GetTankCount())) throw new InventoryException(InventoryException.NO_SUCH_TANK);
-            var res = await Invoke("getFluidInTankInSlot", slot);
+            var res = await GetInvoker()(slot);
             return new()
             {
                 Amount = res["amount"],
@@ -173,7 +173,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <inheritdoc cref=" GetFluidInTankInSlot(int)"/>
         public async Task<FluidInfo> GetFluidInTankInSlot()
         {
-            var res = await Invoke("getFluidInTankInSlot");
+            var res = await GetInvoker()();
             return new()
             {
                 Amount = res["amount"],

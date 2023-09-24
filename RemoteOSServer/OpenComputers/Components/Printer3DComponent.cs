@@ -18,7 +18,7 @@ namespace RemoteOS.OpenComputers.Components
         /// </summary>
         /// <param name="count">How much items to print</param>
         /// <returns>true if printing has started</returns>
-        public async Task<bool> Print(int count = 1) => await InvokeFirst("commit", count);
+        public async Task<bool> Print(int count = 1) => (await Invoke("commit", count))[0];
 
         /// <inheritdoc cref="AddShape(int, int, int, int, int, int, string, bool, Color)"/>
         public Task AddShape(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, string texture, Color tint) => AddShape(minX, minY, minZ, maxX, maxY, maxZ, texture, false, tint);
@@ -66,7 +66,7 @@ namespace RemoteOS.OpenComputers.Components
                 maxY < 0 || maxY > 15 ||
                 maxZ < 0 || maxZ > 15
             ) throw new ArgumentOutOfRangeException("Coordinates must be in range 0..15");
-            return Invoke("addShape", minX, minY, minZ, maxX, maxY, maxZ, texture, state, tint);
+            return GetInvoker()(minX, minY, minZ, maxX, maxY, maxZ, texture, state, tint);
         }
 
         /// <summary>
@@ -143,7 +143,7 @@ namespace RemoteOS.OpenComputers.Components
         public partial Task<int> GetShapeCount();
 
         /// <returns>The maximum allowed number of shapes.</returns>
-        public async Task<int> GetMaxShapeCount() => _maxShapes ??= await InvokeFirst("getMaxShapeCount");
+        public async Task<int> GetMaxShapeCount() => _maxShapes ??= (await GetInvoker()())[0];
 
         /// <returns>The current state of the printer, `busy' or `idle', followed by the progress or model validity, respectively.</returns>
         public async Task<(bool CanPrint, string Status, double Progress)> GetStatus()

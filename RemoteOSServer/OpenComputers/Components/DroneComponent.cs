@@ -39,14 +39,14 @@ namespace RemoteOS.OpenComputers.Components
         public partial Task Move(float dx, float dy, float dz);
 
         /// <returns>The status text currently being displayed in the GUI.</returns>
-        public async Task<string> GetStatusText() => _statusText ??= await InvokeFirst("getStatusText");
+        public async Task<string> GetStatusText() => _statusText ??= (await GetInvoker()())[0];
 
         /// <summary>
         /// Set the status text to display in the GUI.
         /// </summary>
         /// <param name="text">New status text value</param>
         /// <returns>The new status text value</returns>
-        public async Task<string> SetStatusText(string text) => _statusText = await InvokeFirst("setStatusText", text);
+        public async Task<string> SetStatusText(string text) => _statusText = (await GetInvoker()(text))[0];
 
         /// <returns>The current distance to the target position.</returns>
         public partial Task<double> GetOffset();
@@ -55,14 +55,14 @@ namespace RemoteOS.OpenComputers.Components
         public partial Task<double> GetVelocity();
 
         /// <returns>The currently set acceleration.</returns>
-        public async Task<double> GetAcceleration() => _acceleration ??= await InvokeFirst("getAcceleration");
+        public async Task<double> GetAcceleration() => _acceleration ??= (await GetInvoker()())[0];
 
         /// <summary>
         /// Try to set the acceleration to the specified value.
         /// </summary>
         /// <param name="accel">New acceleration value</param>
         /// <returns>The new acceleration</returns>
-        public async Task<double> SetAcceleration(double accel) => (_acceleration = await InvokeFirst("setAcceleration", accel)).Value;
+        public async Task<double> SetAcceleration(double accel) => (_acceleration = (await GetInvoker()(accel))[0]).Value;
         
 #if ROS_PROPERTIES
         public string StatusText

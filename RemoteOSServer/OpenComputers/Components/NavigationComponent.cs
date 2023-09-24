@@ -33,7 +33,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <returns>The current relative position of the robot or the reason why it could not be retrieved.</returns>
         public async Task<ReasonOr<Vector3>> GetPosition()
         {
-            var res = await Invoke("getPosition");
+            var res = await GetInvoker()();
             if (res[0].IsNull)
                 return new Reason(res[1].Value);
             else
@@ -41,10 +41,10 @@ namespace RemoteOS.OpenComputers.Components
         }
 
         /// <returns>The current orientation of the robot.</returns>
-        public async Task<Sides> GetFacing() => (Sides)(await InvokeFirst("getFacing")).AsInt;
+        public async Task<Sides> GetFacing() => (Sides)(await GetInvoker()())[0].AsInt;
 
         /// <returns>The operational range of the navigation upgrade.</returns>
-        public async Task<int> GetRange() => _range ??= await InvokeFirst("getRange");
+        public async Task<int> GetRange() => _range ??= (await GetInvoker()())[0];
 
 #if ROS_PROPERTIES
 #if ROS_PROPS_UNCACHED

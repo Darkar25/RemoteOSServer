@@ -1,4 +1,4 @@
-namespace RemoteOSServer.OpenComputers.Data;
+namespace RemoteOS.OpenComputers.Data;
 
 public class Entity
 {

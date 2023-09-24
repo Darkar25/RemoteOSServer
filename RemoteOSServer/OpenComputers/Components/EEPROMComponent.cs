@@ -25,7 +25,7 @@ namespace RemoteOS.OpenComputers.Components
         public partial Task<bool> MakeReadonly(string checksum);
 
         /// <returns>The currently stored byte array.</returns>
-        public async Task<string> Get() => _bytes ??= await InvokeFirst("get");
+        public async Task<string> Get() => _bytes ??= (await GetInvoker()())[0];
 
         /// <summary>
         /// Overwrite the currently stored byte array.
@@ -35,12 +35,12 @@ namespace RemoteOS.OpenComputers.Components
         public async Task Set(string bytes)
         {
             if (bytes.Length > await GetSize()) throw new IOException("Not enough disk space");
-            if((await Invoke("set", bytes))[1].IsNull)
+            if((await GetInvoker()(bytes))[1].IsNull)
                 _bytes = bytes;
         }
 
         /// <returns>The label of the EEPROM.</returns>
-        public async Task<string> GetLabel() => _label ??= await InvokeFirst("getLabel");
+        public async Task<string> GetLabel() => _label ??= (await GetInvoker()())[0];
 
         /// <summary>
         /// Set the label of the EEPROM.
@@ -48,7 +48,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <param name="label">The new label</param>
         public async Task SetLabel(string label)
         {
-            var res = await Invoke("setLabel", label);
+            var res = await GetInvoker()(label);
             if (res[1].IsNull)
                 _label = res[0];
         }
@@ -58,17 +58,17 @@ namespace RemoteOS.OpenComputers.Components
 #if ROS_GLOBAL_CACHING
             GlobalCache.eepromSize ??=
 #endif
-            await InvokeFirst("getSize");
+            (await GetInvoker()())[0];
 
         /// <returns>The storage capacity of this EEPROM.</returns>
         public async Task<int> GetDataSize() => _dataSize ??=
 #if ROS_GLOBAL_CACHING
             GlobalCache.eepromDataSize ??=
 #endif
-            await InvokeFirst("getDataSize");
+            (await GetInvoker()())[0];
 
         /// <returns>The currently stored byte array.</returns>
-        public async Task<string> GetData() => _data ??= await InvokeFirst("getData");
+        public async Task<string> GetData() => _data ??= (await GetInvoker()());
 
         /// <summary>
         /// Overwrite the currently stored byte array.
@@ -78,7 +78,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task SetData(string data)
         {
             if(data.Length > await GetDataSize()) throw new IOException("Not enough disk space");
-            if ((await Invoke("setData", data))[1].IsNull)
+            if ((await GetInvoker()(data))[1].IsNull)
                 _data = data;
         }
 

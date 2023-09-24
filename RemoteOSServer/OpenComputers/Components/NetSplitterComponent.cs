@@ -25,13 +25,13 @@ namespace RemoteOS.OpenComputers.Components
         public partial Task<bool> Close(Sides side);
 
         /// <returns>Current open/close state of all sides in an array, indexed by direction.</returns>
-        public async Task<bool[]> GetSides() => (await InvokeFirst("getSides")).Linq.Select(x => x.Value.AsBool).ToArray();
+        public async Task<bool[]> GetSides() => (await GetInvoker()())[0].Linq.Select(x => x.Value.AsBool).ToArray();
 
         /// <summary>
         /// Set open state (true/false) of all sides in an array; index by direction.
         /// </summary>
         /// <param name="sides">The array of sides</param>
-        public Task SetSides(bool[] sides) => Invoke("setSides", new object[] { sides });
+        public Task SetSides(bool[] sides) => GetInvoker()(new object[] { sides });
 
 #if ROS_PROPERTIES && ROS_PROPS_UNCACHED
         public bool[] Sides

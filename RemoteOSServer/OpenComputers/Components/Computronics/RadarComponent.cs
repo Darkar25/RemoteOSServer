@@ -1,5 +1,5 @@
 using RemoteOS.Helpers;
-using RemoteOSServer.OpenComputers.Data;
+using RemoteOS.OpenComputers.Data;
 
 namespace RemoteOS.OpenComputers.Components.Computronics
 {
@@ -17,7 +17,7 @@ namespace RemoteOS.OpenComputers.Components.Computronics
         /// <returns>Player List</returns>
         public async Task<IEnumerable<Entity>> GetPlayers(int distance)
         {
-            return (await Invoke("getPlayers", distance))[0].Linq
+            return (await GetInvoker()(distance)).Linq
                 .Select(player => new Entity(player.Value["name"], player.Value["distance"])).ToList();
         }
 
@@ -28,7 +28,7 @@ namespace RemoteOS.OpenComputers.Components.Computronics
         /// <returns>Enitities List</returns>
         public async Task<IEnumerable<Entity>> GetEntities(int distance)
         {
-            return (await Invoke("getEntities", distance))[0].Linq
+            return (await GetInvoker()(distance)).Linq
                 .Select(entity => new Entity(entity.Value["name"], entity.Value["distance"])).ToList();
         }
 
@@ -39,7 +39,7 @@ namespace RemoteOS.OpenComputers.Components.Computronics
         /// <returns>Items List</returns>
         public async Task<IEnumerable<Item>> GetItems(int distance)
         {
-            return (await Invoke("getItems", distance))[0].Linq.ToArray().Select(item =>
+            return (await GetInvoker()(distance)).Linq.ToArray().Select(item =>
                 new Item(item.Value["damage"], item.Value["distance"], item.Value["hasTag"], item.Value["label"],
                     item.Value["size"])).ToList();
         }
@@ -51,7 +51,7 @@ namespace RemoteOS.OpenComputers.Components.Computronics
         /// <returns>Mob List</returns>
         public async Task<IEnumerable<Entity>> GetMobs(int distance)
         {
-            return (await Invoke("getMobs", distance))[0].Linq.ToArray()
+            return (await GetInvoker()(distance)).Linq.ToArray()
                 .Select(mob => new Entity(mob.Value["name"], mob.Value["distance"])).ToList();
         }
     }

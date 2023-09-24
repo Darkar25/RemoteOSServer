@@ -1,6 +1,6 @@
 using System.Numerics;
 using RemoteOS.Helpers;
-using RemoteOSServer.OpenComputers.Data;
+using RemoteOS.OpenComputers.Data;
 
 namespace RemoteOS.OpenComputers.Components.OpenSecurity
 {
@@ -12,8 +12,8 @@ namespace RemoteOS.OpenComputers.Components.OpenSecurity
             parent.Listen("entityDetect", (parameters) =>
             {
                 if (parameters[0].Value == Address.ToString())
-                    EntityDetect?.Invoke((Guid) Guid.Parse(parameters[0]), (string) parameters[1],
-                        (Vector3) new Vector3(parameters[2], parameters[3], parameters[4]));
+                    EntityDetect?.Invoke(Guid.Parse(parameters[0]), (string) parameters[1],
+                        new Vector3(parameters[2], parameters[3], parameters[4]));
             });
         }
 
@@ -44,7 +44,7 @@ namespace RemoteOS.OpenComputers.Components.OpenSecurity
         /// <returns>Entity List</returns>
         public async Task<IEnumerable<OpenSecurityEntity>> ScanEntities(int range = 64)
         {
-            return (await Invoke("scanEntities", range))[0].Linq
+            return (await GetInvoker()(range)).Linq
                 .Select(entity => new OpenSecurityEntity(entity.Value["name"], entity.Value["range"], entity.Value["x"],
                     entity.Value["y"], entity.Value["z"])).ToList();
         }
@@ -56,7 +56,7 @@ namespace RemoteOS.OpenComputers.Components.OpenSecurity
         /// <returns>Players List</returns>
         public async Task<IEnumerable<OpenSecurityEntity>> ScanPlayers(int range = 64)
         {
-            return (await Invoke("scanPlayers", range))[0].Linq
+            return (await GetInvoker()(range)).Linq
                 .Select(player => new OpenSecurityEntity(player.Value["name"], player.Value["range"], player.Value["x"],
                     player.Value["y"], player.Value["z"])).ToList();
         }

@@ -62,7 +62,7 @@ namespace RemoteOS.OpenComputers.Components
         public Task Beep(int frequency, int duration = 0)
         {
             if (frequency < 20 || frequency > 2000) throw new ArgumentOutOfRangeException(nameof(frequency), "Invalid frequency, must be in [20, 2000]");
-            return Invoke("beep", frequency, duration);
+            return GetInvoker()(frequency, duration);
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace RemoteOS.OpenComputers.Components
         public Task Beep(string pattern)
         {
             if (!Regex.IsMatch(pattern, @"^[\.\-]+$")) throw new ArgumentException("Pattern string must contain only dots '.' and dashes '-'"); 
-            return Invoke("beep", pattern);
+            return GetInvoker()(pattern);
         }
 
         /// <returns>Whether the computer is running.</returns>

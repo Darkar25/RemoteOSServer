@@ -38,11 +38,11 @@ namespace RemoteOS.OpenComputers.Components
 
         /// <param name="path">Absolute path</param>
         /// <returns>A list of names of objects in the directory at the specified absolute path in the file system.</returns>
-        public async Task<IEnumerable<string>> List(string path) => (await InvokeFirst("list", path)).Linq.Select(x => x.Value.Value);
+        public async Task<IEnumerable<string>> List(string path) => ((await GetInvoker()(path))[0]).Linq.Select(x => x.Value.Value);
 
         /// <param name="path">Absolute path</param>
         /// <returns>The (real world) timestamp of when the object at the specified absolute path in the file system was modified.</returns>
-        public async Task<DateTime> LastModified(string path) => new DateTime().AddSeconds(await InvokeFirst("lastModified", path));
+        public async Task<DateTime> LastModified(string path) => new DateTime().AddSeconds((await GetInvoker()(path))[0]);
 
         /// <summary>
         /// Removes the object at the specified absolute path in the file system.
@@ -65,27 +65,27 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<FilesystemStream> Open(string path, string mode = "r")
         {
             if (!new string[] { "r", "rb", "w", "wb", "a", "ab" }.Contains(mode)) throw new ArgumentException("Unsupported mode");
-            return new FilesystemStream(this, await InvokeFirst("open", path, mode));
+            return new FilesystemStream(this, (await GetInvoker()(path, mode))[0]);
         }
 
         /// <returns>Whether the file system is read-only.</returns>
         public partial Task<bool> IsReadOny();
 
         /// <returns>The currently used capacity of the file system, in bytes.</returns>
-        public async Task<int> GetUsedSpace() => await InvokeFirst("spaceUsed");
+        public async Task<int> GetUsedSpace() => (await Invoke("spaceUsed"))[0];
 
         /// <returns>The overall capacity of the file system, in bytes.</returns>
-        public async Task<int> GetTotalSpace() => _totalSpace ??= await InvokeFirst("spaceTotal");
+        public async Task<int> GetTotalSpace() => _totalSpace ??= (await Invoke("spaceTotal"))[0];
 
         /// <returns>The current label of the drive.</returns>
-        public async Task<string> GetLabel() => _label ??= await InvokeFirst("getLabel");
+        public async Task<string> GetLabel() => _label ??= (await GetInvoker()())[0];
 
         /// <summary>
         /// Sets the label of the drive.
         /// </summary>
         /// <param name="label">The new label</param>
         /// <returns>The new value, which may be truncated.</returns>
-        public async Task SetLabel(string label) => _label = await InvokeFirst("setLabel", label);
+        public async Task SetLabel(string label) => _label = (await GetInvoker()(label))[0];
 
 #if ROS_PROPERTIES
 #if ROS_PROPS_UNCACHED
@@ -118,14 +118,14 @@ namespace RemoteOS.OpenComputers.Components
             /// </summary>
             /// <param name="count">How much bytes to read</param>
             /// <returns>Data, empty string when EOF is reached</returns>
-            public async Task<string> Read(int count) => await Parent.InvokeFirst("read", Handle, count);
+            public async Task<string> Read(int count) => (await Parent.GetInvoker()(Handle, count))[0];
 
             /// <summary>
             /// Writes the specified data to an open file descriptor
             /// </summary>
             /// <param name="data">Data to write</param>
             /// <returns>true if data was written successfully</returns>
-            public async Task<bool> Write(string data) => await Parent.InvokeFirst("write", Handle, data);
+            public async Task<bool> Write(string data) => (await Parent.GetInvoker()(Handle, data))[0];
 
             /// <summary>
             /// Seeks in an open file descriptor
@@ -133,12 +133,12 @@ namespace RemoteOS.OpenComputers.Components
             /// <param name="whence">Seek mode</param>
             /// <param name="offset">Offset</param>
             /// <returns>The new pointer position.</returns>
-            public async Task<int> Seek(string whence, int offset) => await Parent.InvokeFirst("seek", Handle, whence, offset);
+            public async Task<int> Seek(string whence, int offset) => (await Parent.GetInvoker()(Handle, whence, offset))[0];
 
             /// <summary>
             /// Closes an open file descriptor
             /// </summary>
-            public Task Close() => Parent.Invoke("close", Handle);
+            public Task Close() => Parent.GetInvoker()(Handle);
 
             public void Dispose()
             {

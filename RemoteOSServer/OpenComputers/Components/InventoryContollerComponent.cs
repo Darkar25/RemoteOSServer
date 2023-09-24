@@ -20,7 +20,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> GetInventorySize(Sides side)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            return await InvokeFirst("getInventorySize", side);
+            return (await GetInvoker()(side))[0];
         }
 
         /// <param name="side">The side that has the container</param>
@@ -32,7 +32,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            var res = await InvokeFirst("getStackInSlot", side, slot);
+            var res = (await GetInvoker()(side, slot))[0];
             return ItemStackInfo.FromJson(res);
         }
 
@@ -42,7 +42,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<ItemStackInfo> GetStackInInternalSlot(int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            var res = await InvokeFirst("getStackInInternalSlot", slot);
+            var res = (await GetInvoker()(slot))[0];
             return ItemStackInfo.FromJson(res);
         }
 
@@ -51,7 +51,7 @@ namespace RemoteOS.OpenComputers.Components
         /// <exception cref="InventoryException">This slot does not exist</exception>
         public async Task<ItemStackInfo> GetStackInInternalSlot()
         {
-            var res = await InvokeFirst("getStackInInternalSlot");
+            var res = (await GetInvoker()())[0];
             return ItemStackInfo.FromJson(res);
         }
 
@@ -72,7 +72,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            var res = await Invoke("dropIntoSlot", face, slot, count, side);
+            var res = await GetInvoker()(face, slot, count, side);
             if (!res[0]) return new Reason(res[1].Value);
             return new Success();
         }
@@ -94,7 +94,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            var res = await Invoke("suckFromSlot", face, slot, count, side);
+            var res = await GetInvoker()(face, slot, count, side);
 			if (!res[0]) return new Reason(res[1].Value);
 			return new Success();
 		}
@@ -117,7 +117,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> Store(Sides side, int slot, DatabaseComponent database, int dbSlot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("store", side, slot, database, dbSlot);
+            return (await GetInvoker()(side, slot, database, dbSlot))[0];
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> StoreInternal(int slot, DatabaseComponent database, int dbSlot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("storeInternal", slot, database, dbSlot);
+            return (await GetInvoker()(slot, database, dbSlot))[0];
         }
 
         /// <summary>
@@ -146,7 +146,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CompareToDatabase(int slot, DatabaseComponent database, int dbSlot, bool checkNBT = false)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("compareToDatabase", slot, database, dbSlot, checkNBT);
+            return (await GetInvoker()(slot, database, dbSlot, checkNBT))[0];
         }
 
         /// <param name="side">The side that has the inventory</param>
@@ -158,7 +158,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CompareStacks(Sides side, int slotA, int slotB, bool checkNBT = false)
         {
             if (slotA <= 0 || slotB <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("compareStacks", side, slotA, slotB, checkNBT);
+            return (await GetInvoker()(side, slotA, slotB, checkNBT))[0];
         }
 
         /// <param name="side">The side that has the container</param>
@@ -168,7 +168,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> GetSlotMaxStackSize(Sides side, int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("getSlotMaxStackSize", side, slot);
+            return (await GetInvoker()(side, slot))[0];
         }
 
         /// <param name="side">The side that has the container</param>
@@ -178,7 +178,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<int> GetSlotStackSize(Sides side, int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("getSlotStackSize", side, slot);
+            return (await GetInvoker()(side, slot))[0];
         }
 
         /// <param name="slot">Which slot to compare</param>
@@ -187,7 +187,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> IsEquivalentTo(int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("isEquivalentTo", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <param name="side"></param>
@@ -200,7 +200,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
             if (slotA <= 0 || slotB <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("areStacksEquivalent", side, slotA, slotB);
+            return (await GetInvoker()(side, slotA, slotB))[0];
         }
 
         /// <param name="side">The side to analyze</param>
@@ -210,7 +210,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<string> GetInventoryName(Sides side)
         {
             side.ThrowIfOtherThan(Sides.Front, Sides.Top, Sides.Bottom);
-            return await InvokeFirst("getInventoryName", side);
+            return (await GetInvoker()(side))[0];
         }
     }
 }

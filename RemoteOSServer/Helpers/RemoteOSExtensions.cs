@@ -197,7 +197,7 @@ namespace RemoteOS.Helpers
             if (bufAlloc[0].IsNull) throw new OutOfMemoryException("Not enough video memory.");
             var res = await gpu.Invoke("getBufferSize", bufAlloc[0].AsInt);
             if (res[0].IsNull) throw new BufferException("Failed to allocate the buffer.");
-            if(!(await gpu.InvokeFirst("freeBuffer", bufAlloc[0].AsInt))) throw new BufferException("Failed to close the buffer.");
+            if(!(await gpu.Invoke("freeBuffer", bufAlloc[0].AsInt))[0]) throw new BufferException("Failed to close the buffer.");
 #if ROS_GLOBAL_CACHING
             GlobalCache.gpuMaxWidth[tier] = res[0];
             GlobalCache.gpuMaxHeight[tier] = res[1];

@@ -24,7 +24,7 @@ namespace RemoteOS.OpenComputers.Components
         /// </summary>
         /// <param name="offset">Which byte to read</param>
         /// <returns>The data on that offset</returns>
-        public async Task<byte> ReadByte(int offset) => (byte)await InvokeFirst("readByte", offset);
+        public async Task<byte> ReadByte(int offset) => (byte)(await GetInvoker()(offset))[0];
 
         /// <summary>
         /// Write a single byte to the specified offset.
@@ -48,20 +48,20 @@ namespace RemoteOS.OpenComputers.Components
         public partial Task WriteSector(int sector, string data);
 
         /// <returns>The number of platters in the drive.</returns>
-        public async Task<int> GetPlatterCount() => _platterCount ??= await InvokeFirst("getPlatterCount");
+        public async Task<int> GetPlatterCount() => _platterCount ??= (await GetInvoker()())[0];
 
         /// <returns>The total capacity of the drive, in bytes.</returns>
-        public async Task<int> GetCapacity() => _capacity ??= await InvokeFirst("getCapacity");
+        public async Task<int> GetCapacity() => _capacity ??= (await GetInvoker()())[0];
 
         /// <returns>The current label of the drive.</returns>
-        public async Task<string> GetLabel() => _label ??= await InvokeFirst("getLabel");
+        public async Task<string> GetLabel() => _label ??= (await GetInvoker()())[0];
 
         /// <summary>
         /// Sets the label of the drive.
         /// </summary>
         /// <param name="label">New drive label</param>
         /// <returns>The new value, which may be truncated.</returns>
-        public async Task<string> SetLabel(string label) => _label = await InvokeFirst("setLabel", label);
+        public async Task<string> SetLabel(string label) => _label = (await GetInvoker()(label))[0];
 
 #if ROS_PROPERTIES
         public int PlatterCount => GetPlatterCount().Result;

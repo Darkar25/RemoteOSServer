@@ -20,7 +20,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<ItemStackInfo> Get(int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return ItemStackInfo.FromJson(await InvokeFirst("get", slot));
+            return ItemStackInfo.FromJson((await GetInvoker()(slot))[0]);
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<string> ComputeHash(int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("computeHash", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> CLear(int slot)
         {
             if (slot <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("clear", slot);
+            return (await GetInvoker()(slot))[0];
         }
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (from <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
             if (to <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("copy", from, to);
+            return (await GetInvoker()(from, to))[0];
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (from <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
             if (to <= 0) throw new InventoryException(InventoryException.NO_SUCH_SLOT);
-            return await InvokeFirst("copy", from, to, database);
+            return (await GetInvoker()(from, to, database))[0];
         }
 
         /// <summary>

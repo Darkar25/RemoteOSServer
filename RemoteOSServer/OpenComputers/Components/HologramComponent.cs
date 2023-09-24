@@ -26,7 +26,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<Color> GetPaletteColor(int index)
         {
             if (index <= 0 || (await GetTier() < Tier.Two ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
-            return Color.FromArgb(await InvokeFirst("getPaletteColor", index));
+            return Color.FromArgb((await GetInvoker()(index))[0]);
         }
 
         /// <summary>
@@ -39,10 +39,10 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<Color> SetPaletteColor(int index, Color color)
         {
             if (index <= 0 || (await GetTier() < Tier.Two ? index > 1 : index > 3)) throw new PaletteException("Invalid palette index");
-            return Color.FromArgb(await InvokeFirst("setPaletteColor", index, color));
+            return Color.FromArgb((await GetInvoker()(index, color))[0]);
         }
 
-        public async Task<int> GetMaxDepth() => _maxDepth ??= await InvokeFirst("maxDepth");
+        public async Task<int> GetMaxDepth() => _maxDepth ??= (await Invoke("maxDepth"))[0];
 
         /// <summary>
         /// Clears the hologram.
@@ -59,7 +59,7 @@ namespace RemoteOS.OpenComputers.Components
             if (x < 0 || x >= Dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));
             if (y < 0 || y >= Dimensions.Y) throw new ArgumentOutOfRangeException(nameof(x));
             if (z < 0 || z >= Dimensions.Z) throw new ArgumentOutOfRangeException(nameof(z));
-            return await InvokeFirst("get", x, y, z);
+            return (await GetInvoker()(x, y, z))[0];
         }
 
         /// <inheritdoc cref="Get(int, int, int)"/>
@@ -79,7 +79,7 @@ namespace RemoteOS.OpenComputers.Components
             if (x < 0 || x >= Dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));
             if (y < 0 || y >= Dimensions.Y) throw new ArgumentOutOfRangeException(nameof(x));
             if (z < 0 || z >= Dimensions.Z) throw new ArgumentOutOfRangeException(nameof(z));
-            return Invoke("set", x, y, z, index);
+            return GetInvoker()(x, y, z, index);
         }
 
         /// <inheritdoc cref="Set(int, int, int, int)"/>
@@ -110,7 +110,7 @@ namespace RemoteOS.OpenComputers.Components
             if (minY <= 0 || minY >= Dimensions.Y) throw new ArgumentOutOfRangeException(nameof(minY));
             if (maxY <= 0 || maxY >= Dimensions.Y) throw new ArgumentOutOfRangeException(nameof(maxY));
             if (minY > maxY) throw new ArgumentOutOfRangeException(nameof(minY), "Interval is empty");
-            return Invoke("fill", x, z, minY, maxY, index);
+            return GetInvoker()(x, z, minY, maxY, index);
         }
 
         /// <inheritdoc cref="Fill(int, int, int, int, int)"/>
@@ -139,7 +139,7 @@ namespace RemoteOS.OpenComputers.Components
             if (x < 0 || x >= Dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));
             if (z < 0 || z >= Dimensions.Z) throw new ArgumentOutOfRangeException(nameof(z));
             if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException("Size cannot be negative");
-            return Invoke("copy", x, z, width, height, tx, tz);
+            return GetInvoker()(x, z, width, height, tx, tz);
         }
 
         /// <returns>The render scale of the hologram.</returns>
@@ -153,13 +153,13 @@ namespace RemoteOS.OpenComputers.Components
         public Task SetScale(float scale)
         {
             if (scale < 1f / 3f) throw new ArgumentOutOfRangeException(nameof(scale), "Scale is too small");
-            return Invoke("setScale", scale);
+            return GetInvoker()(scale);
         }
 
         /// <returns>The relative render projection offsets of the hologram.</returns>
         public async Task<Vector3> GetTranslation()
         {
-            var res = await Invoke("getTranslation");
+            var res = await GetInvoker()();
             return new(res[0], res[1], res[2]);
         }
 
@@ -173,7 +173,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task SetTranslation(float x, float y, float z)
         {
             if (y < 0) throw new ArgumentOutOfRangeException(nameof(y), "Unsupported translation value");
-            await Invoke("setTranslation", x, y, z);
+            await GetInvoker()(x, y, z);
         }
 
         /// <inheritdoc cref="SetTranslation(float, float, float)"/>
@@ -192,7 +192,7 @@ namespace RemoteOS.OpenComputers.Components
         public async Task<bool> SetRotation(float angle, float x, float y, float z)
         {
             if (await GetTier() < Tier.Two) throw new NotSupportedException("Rotation is not supported on this tier of holographic projector");
-            return await InvokeFirst("setRotation", angle, x, y, z);
+            return (await GetInvoker()(angle, x, y, z))[0];
         }
 
         /// <inheritdoc cref="SetRotation(float, float, float, float)"/>
@@ -213,7 +213,7 @@ namespace RemoteOS.OpenComputers.Components
         {
             if (await GetTier() < Tier.Two) throw new NotSupportedException("Rotation is not supported on this tier of holographic projector");
             if (speed < -340 * 4 || speed > 340 * 4) throw new ArgumentOutOfRangeException(nameof(speed), "Rotation cannot be that fast");
-            return await InvokeFirst("setRotationSpeed", speed, x, y, z);
+            return (await GetInvoker()(speed, x, y, z))[0];
         }
 
         /// <inheritdoc cref="SetRotationSpeed(float, float, float, float)"/>
