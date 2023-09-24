@@ -13,7 +13,7 @@ namespace RemoteOS.OpenComputers
         IList<Component> Components { get; set; } = null!;
         static Dictionary<string, Type> types = new();
         static ComponentList() {
-            types = Assembly.GetExecutingAssembly().DefinedTypes.Where(x => x.GetCustomAttribute<ComponentAttribute>() is not null).ToDictionary(x => x.GetCustomAttribute<ComponentAttribute>()!.Codename, x => x.AsType());
+            types = Assembly.GetExecutingAssembly().DefinedTypes.SelectMany(x => x.GetCustomAttributes<ComponentAttribute>().Select(y => (y, x))).ToDictionary(x => x.y.Codename, x => x.x.AsType());
         }
         Dictionary<Guid, string> addresses = new();
 

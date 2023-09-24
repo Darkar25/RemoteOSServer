@@ -5,7 +5,7 @@ using RemoteOS.Helpers;
 
 namespace RemoteOS.OpenComputers.Components.Computronics
 {
-    [Component("chat_box")]
+    [Component("chat_box"), Component("chat")]
     public partial class ChatBoxComponent : Component
     {
         public ChatBoxComponent(Machine parent, Guid address) : base(parent, address)

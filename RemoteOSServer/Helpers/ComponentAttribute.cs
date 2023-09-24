@@ -1,6 +1,6 @@
 ﻿namespace RemoteOS.Helpers
 {
-	[AttributeUsage(AttributeTargets.Class)]
+	[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 	public class ComponentAttribute : Attribute
 	{
 		public string Codename { get; init; }
