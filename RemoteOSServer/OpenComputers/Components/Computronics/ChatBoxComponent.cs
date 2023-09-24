@@ -14,8 +14,7 @@ namespace RemoteOS.OpenComputers.Components.Computronics
             {
                 if (parameters[0] == Address.ToString())
                 {
-                    ChatMessage?.Invoke(Guid.Parse(parameters[0]), (string) parameters[1],
-                        (string) parameters[2]);
+                    ChatMessage?.Invoke((string) parameters[1], (string) parameters[2]);
                 }
             });
         }
@@ -23,7 +22,7 @@ namespace RemoteOS.OpenComputers.Components.Computronics
         /// <summary>
         /// Event triggered when chatbox catch message in the radius of actions
         /// </summary>
-        public event Action<Guid, string, string?>? ChatMessage;
+        public event Action<string, string?>? ChatMessage;
 
         /// <summary>
         /// Get the current distance at which messages will be intercepted
