@@ -12,8 +12,7 @@ namespace RemoteOS.OpenComputers.Components.OpenSecurity
             parent.Listen("entityDetect", (parameters) =>
             {
                 if (parameters[0].Value == Address.ToString())
-                    EntityDetect?.Invoke(Guid.Parse(parameters[0]), (string) parameters[1],
-                        new Vector3(parameters[2], parameters[3], parameters[4]));
+                    EntityDetect?.Invoke((string) parameters[1], new Vector3(parameters[2], parameters[3], parameters[4]));
             });
         }
 
@@ -25,7 +24,7 @@ namespace RemoteOS.OpenComputers.Components.OpenSecurity
         /// <br>Vector3 - coordinates of entity</br>
         /// </para>
         /// </summary>
-        public event Action<Guid, string, Vector3>? EntityDetect;
+        public event Action<string, Vector3>? EntityDetect;
 
         /// <summary>
         /// Get current coordinates of entity detector
